@@ -27,6 +27,10 @@ export default function Footer() {
         <a href="#" className="hover:underline">Help</a>
         <a href="#" className="hover:underline">More</a>
       </div>
+      <div className="flex space-x-4 text-[10px] text-gray-500">
+        <p>admin@gmail.com / 123456</p>
+      </div>
+      
     </div>
   );
 }
