@@ -1,15 +1,7 @@
 // src/components/Profile/ProfilePhotos.jsx
 import React from 'react';
 
-export default function ProfilePhotos({ userData, isGuest }) {
-  if (isGuest) {
-    return (
-      <div className="bg-white p-6 rounded-md shadow text-center">
-        <p className="text-gray-500">Sign in to see your photos</p>
-      </div>
-    );
-  }
-
+export default function ProfilePhotos({ userData }) {
   return (
     <div className="bg-white p-6 rounded-md shadow">
       <h3 className="text-xl font-semibold mb-4">Photos</h3>

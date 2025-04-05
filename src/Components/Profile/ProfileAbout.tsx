@@ -4,10 +4,10 @@ import { Edit2 } from 'lucide-react';
 import Button from '../UI/Button';
 import { useAuth } from '../../Contexts/AuthContexts';
 
-export default function ProfileAbout({ currentUser, userData, isGuest, onSuccess, onError }) {
+export default function ProfileAbout({ currentUser, userData, onSuccess, onError }) {
   const { updateUserProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
-  const [displayName, setDisplayName] = useState(currentUser?.displayName || '');
+  const [displayName, setDisplayName] = useState(currentUser?.displayName || userData?.displayName || '');
   const [loading, setLoading] = useState(false);
   const [bio, setBio] = useState(userData?.bio || '');
 
@@ -25,14 +25,6 @@ export default function ProfileAbout({ currentUser, userData, isGuest, onSuccess
     } finally {
       setLoading(false);
     }
-  }
-
-  if (isGuest) {
-    return (
-      <div className="bg-white p-6 rounded-md shadow text-center">
-        <p className="text-gray-500">Sign in to see and edit your profile information</p>
-      </div>
-    );
   }
 
   return (

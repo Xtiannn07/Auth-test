@@ -26,9 +26,8 @@ export default function UserProfile() {
     return null;
   }
 
-  // Get mock data for the authenticated user
-  const userData = getUserData(currentUser.uid);
-  const isGuest = !userData; // If no mock data exists, treat as guest
+  // Get user data based on the current user
+  const userData = getUserData(currentUser);
 
   async function handleLogout() {
     try {
@@ -42,21 +41,20 @@ export default function UserProfile() {
   const renderTabContent = () => {
     switch(activeTab) {
       case 'posts':
-        return <ProfileFeed userData={userData} currentUser={currentUser} isGuest={isGuest} />;
+        return <ProfileFeed userData={userData} currentUser={currentUser} />;
       case 'about':
         return <ProfileAbout 
           currentUser={currentUser} 
           userData={userData}
-          isGuest={isGuest}
           onSuccess={(message) => setSuccess(message)}
           onError={(message) => setError(message)}
         />;
       case 'friends':
-        return <ProfileFriends userData={userData} isGuest={isGuest} />;
+        return <ProfileFriends userData={userData} />;
       case 'photos':
-        return <ProfilePhotos userData={userData} isGuest={isGuest} />;
+        return <ProfilePhotos userData={userData} />;
       case 'saved':
-        return <ProfileSaved userData={userData} isGuest={isGuest} />;
+        return <ProfileSaved userData={userData} />;
       default:
         return <div className="bg-white p-6 rounded-md shadow flex items-center justify-center h-40">
           <p className="text-gray-500">No content available for this tab yet</p>
@@ -75,7 +73,6 @@ export default function UserProfile() {
         <ProfileHeader 
           currentUser={currentUser}
           userData={userData}
-          isGuest={isGuest}
           onLogout={handleLogout}
           onSuccess={(message) => setSuccess(message)}
           onError={(message) => setError(message)}
@@ -93,7 +90,6 @@ export default function UserProfile() {
           <ProfileSidebar 
             currentUser={currentUser}
             userData={userData}
-            isGuest={isGuest}
           />
           
           {/* Main content */}

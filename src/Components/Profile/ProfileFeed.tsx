@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Camera, Users, MessageCircle } from 'lucide-react';
 import PostCard from './ProfilePostCard';
 
-export default function ProfileFeed({ userData, currentUser, isGuest }) {
+export default function ProfileFeed({ userData, currentUser }) {
   const [postText, setPostText] = useState('');
   const displayName = currentUser?.displayName || userData?.displayName || 'User';
   
@@ -20,9 +20,9 @@ export default function ProfileFeed({ userData, currentUser, isGuest }) {
       <div className="bg-white p-4 rounded-md shadow">
         <div className="flex items-center space-x-3 mb-4">
           <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden">
-            {currentUser.photoURL || userData?.profilePicture ? (
+            {userData?.profilePicture ? (
               <img 
-                src={currentUser.photoURL || userData?.profilePicture} 
+                src={userData.profilePicture} 
                 alt="Profile" 
                 className="w-full h-full object-cover" 
               />
@@ -56,11 +56,7 @@ export default function ProfileFeed({ userData, currentUser, isGuest }) {
       </div>
       
       {/* User's posts */}
-      {isGuest ? (
-        <div className="bg-white p-6 rounded-md shadow text-center">
-          <p className="text-gray-500">Sign in to see your posts and activity</p>
-        </div>
-      ) : userData?.posts && userData.posts.length > 0 ? (
+      {userData?.posts && userData.posts.length > 0 ? (
         userData.posts.map((post) => (
           <PostCard key={post.id} post={post} userData={userData} />
         ))

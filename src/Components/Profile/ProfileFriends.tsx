@@ -1,17 +1,8 @@
-
 // src/components/Profile/ProfileFriends.jsx
 import React from 'react';
 import { UserPlus } from 'lucide-react';
 
-export default function ProfileFriends({ userData, isGuest }) {
-  if (isGuest) {
-    return (
-      <div className="bg-white p-6 rounded-md shadow text-center">
-        <p className="text-gray-500">Sign in to see your friends</p>
-      </div>
-    );
-  }
-
+export default function ProfileFriends({ userData }) {
   return (
     <div className="bg-white p-6 rounded-md shadow">
       <h3 className="text-xl font-semibold mb-4">Friends</h3>

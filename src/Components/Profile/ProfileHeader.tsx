@@ -4,10 +4,10 @@ import { Camera, Edit2, LogOut } from 'lucide-react';
 import Button from '../UI/Button';
 import { useAuth } from '../../Contexts/AuthContexts';
 
-export default function ProfileHeader({ currentUser, userData, isGuest, onLogout, onSuccess, onError }) {
+export default function ProfileHeader({ currentUser, userData, onLogout, onSuccess, onError }) {
   const { updateUserProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
-  const [displayName, setDisplayName] = useState(currentUser?.displayName || '');
+  const [displayName, setDisplayName] = useState(currentUser?.displayName || userData?.displayName || '');
   const [loading, setLoading] = useState(false);
 
   async function handleUpdateProfile() {
@@ -41,16 +41,16 @@ export default function ProfileHeader({ currentUser, userData, isGuest, onLogout
           <div className="flex items-end -mt-12 sm:-mt-16 pb-4">
             <div className="relative">
               <div className="w-24 h-24 sm:w-32 sm:h-32 bg-white rounded-full border-4 border-white shadow overflow-hidden flex items-center justify-center">
-                {currentUser.photoURL || userData?.profilePicture ? (
+                {userData?.profilePicture ? (
                   <img 
-                    src={currentUser.photoURL || userData?.profilePicture} 
+                    src={userData.profilePicture} 
                     alt="Profile" 
                     className="w-full h-full object-cover" 
                   />
                 ) : (
                   <div className="bg-blue-100 w-full h-full flex items-center justify-center">
                     <span className="text-blue-500 font-bold text-4xl">
-                      {displayName.charAt(0).toUpperCase() || 'G'}
+                      {displayName.charAt(0).toUpperCase() || 'U'}
                     </span>
                   </div>
                 )}
@@ -60,9 +60,9 @@ export default function ProfileHeader({ currentUser, userData, isGuest, onLogout
               </div>
             </div>
             <div className="ml-4 mb-4">
-              <h1 className="text-2xl font-bold">{displayName || (userData?.displayName || 'Guest')}</h1>
+              <h1 className="text-2xl font-bold">{displayName || userData?.displayName}</h1>
               <p className="text-gray-500 text-sm">{currentUser.email}</p>
-              {userData?.friendCount && (
+              {userData?.friendCount > 0 && (
                 <p className="text-gray-500 text-sm">{userData.friendCount} Friends</p>
               )}
             </div>
