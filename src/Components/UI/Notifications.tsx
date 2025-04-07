@@ -1,5 +1,5 @@
 // src/components/UI/Notification.jsx
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 
 export default function Notification({ type, message, onClose }) {

@@ -1,5 +1,4 @@
 // src/components/Profile/PostCard.jsx
-import React from 'react';
 import { ThumbsUp, MessageCircle, Share2, MoreHorizontal } from 'lucide-react';
 
 export default function PostCard({ post, userData }) {

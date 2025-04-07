@@ -1,5 +1,4 @@
 // src/components/Profile/ProfileNavigation.jsx
-import React from 'react';
 import { Home, Users, Bookmark, Image } from 'lucide-react';
 
 export default function ProfileNavigation({ activeTab, onTabChange }) {

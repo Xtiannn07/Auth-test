@@ -1,5 +1,4 @@
 // src/components/Profile/ProfileFriends.jsx
-import React from 'react';
 import { UserPlus } from 'lucide-react';
 
 export default function ProfileFriends({ userData }) {

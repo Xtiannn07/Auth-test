@@ -1,5 +1,5 @@
 // src/components/Profile/UserProfile.jsx
-import React, { useState } from 'react'; 
+import { useState } from 'react'; 
 import { useAuth } from '../../Contexts/AuthContexts';
 import { useNavigate } from 'react-router-dom';
 import { getUserData } from '../../utils/mockData';
@@ -68,7 +68,7 @@ export default function UserProfile() {
       {error && <Notification type="error" message={error} onClose={() => setError('')} />}
       {success && <Notification type="success" message={success} onClose={() => setSuccess('')} />}
       
-      <div className="max-w-4xl mx-auto pt-16">
+      <div className="max-w-4xl mx-auto md:pt-5">
         {/* Profile Header with Cover and Profile Picture */}
         <ProfileHeader 
           currentUser={currentUser}

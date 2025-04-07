@@ -1,5 +1,5 @@
 // src/components/Profile/ProfileFeed.jsx
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Camera, Users, MessageCircle } from 'lucide-react';
 import PostCard from './ProfilePostCard';
 

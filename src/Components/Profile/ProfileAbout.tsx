@@ -1,5 +1,5 @@
 // src/components/Profile/ProfileAbout.jsx
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Edit2 } from 'lucide-react';
 import Button from '../UI/Button';
 import { useAuth } from '../../Contexts/AuthContexts';

@@ -1,5 +1,5 @@
 // src/components/Profile/ProfileHeader.jsx
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Camera, Edit2, LogOut } from 'lucide-react';
 import Button from '../UI/Button';
 import { useAuth } from '../../Contexts/AuthContexts';
@@ -36,7 +36,7 @@ export default function ProfileHeader({ currentUser, userData, onLogout, onSucce
       </div>
       
       {/* Profile picture and name */}
-      <div className="px-4 sm:px-6 relative">
+      <div className=" pr-1 pl-4 relative">
         <div className="flex justify-between items-end">
           <div className="flex items-end -mt-12 sm:-mt-16 pb-4">
             <div className="relative">
@@ -68,22 +68,14 @@ export default function ProfileHeader({ currentUser, userData, onLogout, onSucce
             </div>
           </div>
           
-          <div className="pb-4 flex space-x-2">
+          <div className="pb-1 flex space-x-1 place-items-end">
             <Button 
               type="button"
-              className="bg-blue-500 hover:bg-blue-600 flex items-center"
-              onClick={() => setIsEditing(!isEditing)}
-            >
-              <Edit2 size={16} className="mr-2" /> Edit Profile
+              className=" w-full h-8 text-[8px] sm:text-[12px] hover:bg-blue-300 flex items-center"
+              onClick={() => setIsEditing(!isEditing)}>
+              <Edit2 size={12} className="mr-1" /> Edit Profile
             </Button>
             
-            <Button
-              type="button"
-              onClick={onLogout}
-              className="bg-gray-200 hover:bg-gray-300 text-gray-800 flex items-center"
-            >
-              <LogOut size={16} className="mr-2" /> Sign Out
-            </Button>
           </div>
         </div>
       </div>

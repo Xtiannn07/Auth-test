@@ -1,5 +1,4 @@
 // src/components/Profile/ProfileSaved.jsx
-import React from 'react';
 import { Bookmark } from 'lucide-react';
 
 export default function ProfileSaved({ userData }) {

@@ -1,6 +1,4 @@
 // src/components/Profile/ProfilePhotos.jsx
-import React from 'react';
-
 export default function ProfilePhotos({ userData }) {
   return (
     <div className="bg-white p-6 rounded-md shadow">

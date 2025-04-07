@@ -1,6 +1,4 @@
 // src/components/Profile/ProfileSidebar.jsx
-import React from 'react';
-
 export default function ProfileSidebar({ currentUser, userData }) {
   return (
     <div className="space-y-4">
