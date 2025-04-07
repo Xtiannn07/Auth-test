@@ -1,5 +1,9 @@
 // src/components/Profile/ProfileSidebar.jsx
+import {Image } from 'lucide-react';
+import Button from '../UI/Button';
+
 export default function ProfileSidebar({ currentUser, userData }) {
+
   return (
     <div className="space-y-4">
       <div className="bg-white rounded-md shadow p-4">
@@ -16,7 +20,9 @@ export default function ProfileSidebar({ currentUser, userData }) {
       
       <div className="bg-white rounded-md shadow p-4">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="font-medium">Photos</h3>
+            <Button className=" w-full h-8 text-[8px] sm:text-[12px] hover:bg-blue-300 flex items-center">
+              <Image size={12} className="mr-1" /> Photos
+            </Button>
           {userData?.photos && userData.photos.length > 0 && (
             <a href="#" className="text-blue-500 text-sm">See All</a>
           )}

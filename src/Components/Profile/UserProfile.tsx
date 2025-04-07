@@ -9,7 +9,6 @@ import ProfileAbout from './ProfileAbout';
 import ProfileFeed from './ProfileFeed';
 import ProfileFriends from './ProfileFriends';
 import ProfilePhotos from './ProfilePhotos';
-import ProfileSaved from './ProfileSaved';
 import ProfileSidebar from './ProfileSidebar';
 import Notification from '../UI/Notifications';
 

@@ -1,5 +1,5 @@
 // src/components/Profile/ProfileNavigation.jsx
-import { Home, Users, Bookmark, Image } from 'lucide-react';
+import { Home, Users, Image } from 'lucide-react';
 
 export default function ProfileNavigation({ activeTab, onTabChange }) {
   const tabs = [
@@ -7,7 +7,6 @@ export default function ProfileNavigation({ activeTab, onTabChange }) {
     { id: 'about', name: 'About', icon: <Users size={20} /> },
     { id: 'friends', name: 'Friends', icon: <Users size={20} /> },
     { id: 'photos', name: 'Photos', icon: <Image size={20} /> },
-    { id: 'saved', name: 'Saved', icon: <Bookmark size={20} /> },
   ];
 
   return (
