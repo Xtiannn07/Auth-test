@@ -36,8 +36,8 @@ export default function ProfileHeader({ currentUser, userData, onLogout, onSucce
       </div>
       
       {/* Profile picture and name */}
-      <div className=" pr-1 pl-4 relative">
-        <div className="flex justify-between items-end">
+      <div className="pr-1 pl-4 relative">
+        <div className="flex justify-between ">
           <div className="flex items-end -mt-12 sm:-mt-16 pb-4">
             <div className="relative">
               <div className="w-24 h-24 sm:w-32 sm:h-32 bg-white rounded-full border-4 border-white shadow overflow-hidden flex items-center justify-center">
