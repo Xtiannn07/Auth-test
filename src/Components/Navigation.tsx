@@ -7,6 +7,7 @@ export default function Navbar() {
   const handleTabClick = (tab) => {
     setActiveTab(tab);
   };
+// new
   
   return (
     <div className="bg-black w-full py-2 px-4">
