@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../Contexts/AuthContexts';
 import Input from '../UI/Input';
 import Button from '../UI/Button';
-import Footer from './../Footer';
+import SignInFooter from './Footer';
 
 export default function SignIn() {
   const [email, setEmail] = useState('');
@@ -99,7 +99,7 @@ export default function SignIn() {
       </div>
 
       {/* Footer is now placed outside the main content wrapper */}
-      <Footer />
+      <SignInFooter />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 
-export default function Footer() {
+export default function SignInFooter() {
   return (
     <div className="w-full mt-auto flex flex-col items-center">
       <div className="w-full max-w-md flex">
