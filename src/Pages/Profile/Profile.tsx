@@ -1,40 +1,92 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../Contexts/AuthContexts';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../../Services/Firebase';
 import TopNavigation from "../../Components/Navigation/TopNavigation";
 import BottomNavigation from "../../Components/Navigation/BottomNavigation";
 import ProfileHeader from './Header';
 import { Heart, MoreHorizontal, Link } from 'lucide-react';
 
-
-// Main layout component
 export default function ProfilePage() {
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
+  const [userData, setUserData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const { currentUser } = useAuth();
   
-  // Mock data that would normally come from props or context
-  const currentUser = {
-    displayName: 'Jessica Lexus',
-    email: 'jessica@example.com'
-  };
-  
-  const userData = {
-    displayName: 'Jessica Lexus',
-    username: 'jessicalexus',
-    bio: 'Digital creator and lifestyle influencer. Sharing my journey through photos and thoughts.',
-    website: 'linktr.ee/jessicalexus',
-    followerCount: 1200000,
-    postCount: 342,
-    profilePicture: './user.svg'
-  };
-  
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        if (!currentUser) return;
+        
+        // Get additional user data from Firestore
+        const userDocRef = doc(db, 'users', currentUser.uid);
+        const userDoc = await getDoc(userDocRef);
+        
+        if (userDoc.exists()) {
+          setUserData({
+            uid: currentUser.uid,
+            displayName: currentUser.displayName || userDoc.data().displayName || currentUser.email.split('@')[0],
+            username: userDoc.data().username || currentUser.email.split('@')[0],
+            email: currentUser.email,
+            bio: userDoc.data().bio || '',
+            website: userDoc.data().website || '',
+            followerCount: userDoc.data().followerCount || 0,
+            followingCount: userDoc.data().followingCount || 0,
+            postCount: userDoc.data().postCount || 0,
+            profilePicture: currentUser.photoURL || userDoc.data().profilePicture || './user.svg',
+            coverPhoto: userDoc.data().coverPhoto || null
+          });
+        } else {
+          // If no user document exists, create basic profile from auth data
+          setUserData({
+            uid: currentUser.uid,
+            displayName: currentUser.displayName || currentUser.email.split('@')[0],
+            username: currentUser.email.split('@')[0],
+            email: currentUser.email,
+            bio: '',
+            website: '',
+            followerCount: 0,
+            followingCount: 0,
+            postCount: 0,
+            profilePicture: currentUser.photoURL || './user.svg',
+            coverPhoto: null
+          });
+        }
+        setLoading(false);
+      } catch (err) {
+        console.error("Error fetching user data:", err);
+        setError('Failed to load user data');
+        setLoading(false);
+      }
+    };
+    
+    fetchUserData();
+  }, [currentUser]);
+
   const handleLogout = () => {
-    // Logic for logout would go here
+    // Your logout logic here
     console.log('Logging out');
   };
 
+  if (loading) {
+    return (
+      <div className="flex flex-col h-screen bg-black text-white items-center justify-center">
+        <div>Loading profile...</div>
+      </div>
+    );
+  }
+
+  if (!userData) {
+    return (
+      <div className="flex flex-col h-screen bg-black text-white items-center justify-center">
+        <div>Failed to load profile data</div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-screen bg-black text-white">
-      {/* Profile Header with Cover and Profile Picture */}
       <TopNavigation username={userData.username} />
       
       <ProfileHeader 
@@ -50,6 +102,8 @@ export default function ProfilePage() {
     </div>
   );
 }
+
+// Rest of your components remain the same...
 
 // Profile content component
 function ProfileContent({ userData }) {

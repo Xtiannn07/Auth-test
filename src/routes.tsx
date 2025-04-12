@@ -37,17 +37,22 @@ const routes = [
     element: <SignUp />
   },
   {
-    path: '/profile2',
-    element: <ProfilePage />
-  },
-  {
     path: '/profile',
     element: (
       <PrivateRoute>
-        <UserProfile />
+        <ProfilePage />
       </PrivateRoute>
     )
   }
+  // ,
+  // {
+  //   path: '/profile',
+  //   element: (
+  //     <PrivateRoute>
+  //       <UserProfile />
+  //     </PrivateRoute>
+  //   )
+  // }
 ];
 
 export default routes;
