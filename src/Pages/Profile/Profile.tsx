@@ -87,7 +87,10 @@ export default function ProfilePage() {
 
   return (
     <div className="flex flex-col h-screen bg-black text-white">
-      <TopNavigation username={userData.username} />
+      <TopNavigation 
+        username={userData.username} 
+        onLogout={handleLogout} 
+      />
       
       <ProfileHeader 
         currentUser={currentUser}

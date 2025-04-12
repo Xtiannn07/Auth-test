@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../Contexts/AuthContexts';
 import Input from '../UI/Input';
@@ -27,6 +27,19 @@ export default function SignIn() {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    // Clear any residual auth data when arriving at signin
+    localStorage.removeItem('authToken');
+    sessionStorage.clear();
+    
+    // Disable cache
+    window.onpageshow = (event) => {
+      if (event.persisted) {
+        window.location.reload();
+      }
+    };
+  }, []);
 
   return (
     <div className="flex flex-col items-center min-h-screen py-2 px-4">

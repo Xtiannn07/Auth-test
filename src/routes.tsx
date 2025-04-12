@@ -44,15 +44,7 @@ const routes = [
       </PrivateRoute>
     )
   }
-  // ,
-  // {
-  //   path: '/profile',
-  //   element: (
-  //     <PrivateRoute>
-  //       <UserProfile />
-  //     </PrivateRoute>
-  //   )
-  // }
+
 ];
 
 export default routes;
