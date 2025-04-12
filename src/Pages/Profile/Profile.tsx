@@ -2,73 +2,64 @@ import { useState } from 'react';
 import { useAuth } from '../../Contexts/AuthContexts';
 import TopNavigation from "../../Components/Navigation/TopNavigation";
 import BottomNavigation from "../../Components/Navigation/BottomNavigation";
+import ProfileHeader from './Header';
 import { Heart, MoreHorizontal, Link } from 'lucide-react';
 
 
 // Main layout component
 export default function ProfilePage() {
+  const [success, setSuccess] = useState('');
+  const [error, setError] = useState('');
+  
+  // Mock data that would normally come from props or context
+  const currentUser = {
+    displayName: 'Jessica Lexus',
+    email: 'jessica@example.com'
+  };
+  
+  const userData = {
+    displayName: 'Jessica Lexus',
+    username: 'jessicalexus',
+    bio: 'Digital creator and lifestyle influencer. Sharing my journey through photos and thoughts.',
+    website: 'linktr.ee/jessicalexus',
+    followerCount: 1200000,
+    postCount: 342,
+    profilePicture: './user.svg'
+  };
+  
+  const handleLogout = () => {
+    // Logic for logout would go here
+    console.log('Logging out');
+  };
+
   return (
-    <div className="flex flex-col h-screen bg-white text-black">
-      <Profile/>
+    <div className="flex flex-col h-screen bg-black text-white">
+      {/* Profile Header with Cover and Profile Picture */}
+      <TopNavigation username={userData.username} />
+      
+      <ProfileHeader 
+        currentUser={currentUser}
+        userData={userData}
+        onLogout={handleLogout}
+        onSuccess={(message) => setSuccess(message)}
+        onError={(message) => setError(message)}
+      />
+      
+      <ProfileContent userData={userData} />
       <BottomNavigation />
     </div>
   );
 }
 
-// Profile page component
-function Profile() {
+// Profile content component
+function ProfileContent({ userData }) {
   const [activeTab, setActiveTab] = useState('threads');
   
-  const profileData = {
-    username: 'jessicalexus',
-    displayName: 'Jessica Lexus',
-    bio: 'Digital creator and lifestyle influencer. Sharing my journey through photos and thoughts.',
-    website: 'linktr.ee/jessicalexus',
-    followers: '1.2M',
-    profilePicture: './user.svg'
-  };
-
   return (
-    <>
-      <TopNavigation username={profileData.username} />
-      <ProfileHeader profile={profileData} />
+    <div className="flex-1 overflow-hidden flex flex-col">
       <ProfileActions />
       <ContentTabs activeTab={activeTab} setActiveTab={setActiveTab} />
       <TabContent activeTab={activeTab} />
-    </>
-  );
-}
-
-
-// Profile header component
-function ProfileHeader({ profile }) {
-  return (
-    <div className="p-4">
-      <div className="flex justify-between items-start">
-        <div>
-          <h1 className="text-2xl font-bold">{profile.displayName}</h1>
-          <div className="flex items-center mt-1">
-            <p className="text-base">{profile.username}</p>
-            <span className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full ml-2">threads.net</span>
-          </div>
-        </div>
-        <ProfilePicture src={profile.profilePicture} size="lg" />
-      </div>
-      
-      <p className="mt-4 text-base">{profile.bio}</p>
-      
-      <div className="flex items-center mt-2 text-gray-500 text-sm">
-        <Link className="h-4 w-4 mr-1" />
-        <a href="#" className="text-blue-500">{profile.website}</a>
-      </div>
-      
-      <div className="flex items-center mt-3 text-gray-600 text-sm">
-        <div className="flex items-center">
-          <span className="font-semibold text-black mr-1">{profile.followers}</span> followers
-        </div>
-        <div className="h-1 w-1 bg-gray-400 rounded-full mx-2"></div>
-        <a href="#" className="hover:underline">See followers</a>
-      </div>
     </div>
   );
 }
@@ -82,7 +73,7 @@ function ProfilePicture({ src, size = "md", alt = "Profile" }) {
   };
   
   return (
-    <div className={`${sizeClasses[size]} bg-gray-200 rounded-full overflow-hidden`}>
+    <div className={`${sizeClasses[size]} bg-gray-700 rounded-full overflow-hidden`}>
       <img src={src} alt={alt} className="w-full h-full object-cover" />
     </div>
   );
@@ -91,7 +82,7 @@ function ProfilePicture({ src, size = "md", alt = "Profile" }) {
 // Profile action buttons component
 function ProfileActions() {
   return (
-    <div className="flex px-4 gap-2">
+    <div className="flex px-4 gap-2 mt-2">
       <Button variant="secondary">Edit profile</Button>
       <Button variant="secondary">Share profile</Button>
     </div>
@@ -101,13 +92,13 @@ function ProfileActions() {
 // Reusable button component
 function Button({ children, variant = "primary", onClick }) {
   const variantClasses = {
-    primary: "bg-black text-white",
-    secondary: "bg-gray-100 text-black"
+    primary: "bg-white text-black",
+    secondary: "bg-transparent border border-gray-700 hover:bg-gray-800 text-white"
   };
   
   return (
     <button 
-      className={`flex-1 py-2 rounded-lg font-medium ${variantClasses[variant]}`}
+      className={`flex-1 py-2 rounded-full font-medium ${variantClasses[variant]}`}
       onClick={onClick}
     >
       {children}
@@ -124,11 +115,11 @@ function ContentTabs({ activeTab, setActiveTab }) {
   ];
   
   return (
-    <div className="flex border-b border-gray-200 mt-4">
+    <div className="flex border-t border-b border-gray-800 mt-4">
       {tabs.map(tab => (
         <button 
           key={tab.id}
-          className={`flex-1 py-3 font-medium ${activeTab === tab.id ? 'border-b-2 border-black' : 'text-gray-500'}`}
+          className={`flex-1 py-3 font-medium ${activeTab === tab.id ? 'border-b-2 border-white' : 'text-gray-500'}`}
           onClick={() => setActiveTab(tab.id)}
         >
           {tab.label}
@@ -187,7 +178,7 @@ function ThreadsList() {
   ];
   
   return (
-    <div className="divide-y divide-gray-200">
+    <div className="divide-y divide-gray-800">
       {threads.map(thread => (
         <ThreadItem key={thread.id} thread={thread} />
       ))}
@@ -217,7 +208,7 @@ function ThreadItemSidebar() {
   return (
     <div className="mr-3">
       <ProfilePicture src="/api/placeholder/40/40" size="sm" />
-      <div className="w-0.5 bg-gray-200 h-16 mx-auto mt-1"></div>
+      <div className="w-0.5 bg-gray-700 h-16 mx-auto mt-1"></div>
     </div>
   );
 }
@@ -242,7 +233,7 @@ function ThreadItemContent({ content, image }) {
       <p className="mt-1 text-sm">{content}</p>
       
       {image && (
-        <div className="mt-3 bg-gray-100 rounded-xl overflow-hidden">
+        <div className="mt-3 bg-gray-800 rounded-xl overflow-hidden">
           <img src={image} alt="Thread image" className="w-full object-cover" />
         </div>
       )}
