@@ -4,6 +4,7 @@ import SignIn from './Components/Auth/SignIn';
 import SignUp from './Components/Auth/SignUp';
 import UserProfile from './Components/Profile/UserProfile';
 import { useAuth } from './Contexts/AuthContexts';
+import ProfilePage from './Pages/Profile/Profile'
 
 function PrivateRoute({ children }) {
   const { currentUser } = useAuth();
@@ -23,6 +24,10 @@ const routes = [
   {
     path: '/signup',
     element: <SignUp />
+  },
+  {
+    path: '/profile2',
+    element: <ProfilePage />
   },
   {
     path: '/profile',
