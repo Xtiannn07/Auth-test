@@ -1,18 +1,22 @@
 import { useState } from 'react';
-import { Search, Home, Heart, Edit, User, ArrowLeft, MoreHorizontal, Link } from 'lucide-react';
+import { useAuth } from '../../Contexts/AuthContexts';
+import TopNavigation from "../../Components/Navigation/TopNavigation";
+import BottomNavigation from "../../Components/Navigation/BottomNavigation";
+import { Heart, MoreHorizontal, Link } from 'lucide-react';
+
 
 // Main layout component
-export default function ThreadsApp() {
+export default function ProfilePage() {
   return (
     <div className="flex flex-col h-screen bg-white text-black">
-      <ProfilePage />
+      <Profile/>
       <BottomNavigation />
     </div>
   );
 }
 
 // Profile page component
-function ProfilePage() {
+function Profile() {
   const [activeTab, setActiveTab] = useState('threads');
   
   const profileData = {
@@ -21,7 +25,7 @@ function ProfilePage() {
     bio: 'Digital creator and lifestyle influencer. Sharing my journey through photos and thoughts.',
     website: 'linktr.ee/jessicalexus',
     followers: '1.2M',
-    profilePicture: '/api/placeholder/64/64'
+    profilePicture: './user.svg'
   };
 
   return (
@@ -35,18 +39,6 @@ function ProfilePage() {
   );
 }
 
-// Top navigation component
-function TopNavigation({ username }) {
-  return (
-    <div className="flex items-center justify-between p-4 border-b border-gray-200">
-      <div className="flex items-center">
-        <ArrowLeft className="h-5 w-5 mr-6" />
-        <h2 className="text-xl font-semibold">{username}</h2>
-      </div>
-      <MoreHorizontal className="h-5 w-5" />
-    </div>
-  );
-}
 
 // Profile header component
 function ProfileHeader({ profile }) {
@@ -283,27 +275,6 @@ function ThreadItemStats({ likes, replies }) {
       <span>{likes} likes</span>
       <span className="mx-1">•</span>
       <span>{replies} replies</span>
-    </div>
-  );
-}
-
-// Bottom navigation component
-function BottomNavigation() {
-  const navItems = [
-    { icon: <Home className="h-6 w-6 text-gray-700" />, active: false },
-    { icon: <Search className="h-6 w-6 text-gray-500" />, active: false },
-    { icon: <Edit className="h-6 w-6 text-gray-500" />, active: false },
-    { icon: <Heart className="h-6 w-6 text-gray-500" />, active: false },
-    { icon: <User className="h-6 w-6 text-black" />, active: true }
-  ];
-  
-  return (
-    <div className="flex items-center justify-around py-3 border-t border-gray-200 bg-white">
-      {navItems.map((item, index) => (
-        <button key={index} className="p-1">
-          {item.icon}
-        </button>
-      ))}
     </div>
   );
 }

@@ -52,8 +52,6 @@ export default function UserProfile() {
         return <ProfileFriends userData={userData} />;
       case 'photos':
         return <ProfilePhotos userData={userData} />;
-      case 'saved':
-        return <ProfileSaved userData={userData} />;
       default:
         return <div className="bg-white p-6 rounded-md shadow flex items-center justify-center h-40">
           <p className="text-gray-500">No content available for this tab yet</p>
