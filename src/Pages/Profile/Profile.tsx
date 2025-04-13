@@ -7,7 +7,7 @@ import TopNavigation from "../../Components/Navigation/TopNavigation";
 import BottomNavigation from "../../Components/Navigation/BottomNavigation";
 import ProfileHeader from './Header';
 import ProfileContent from './ProfileContent';
-import LoadingScreen from '../../Components/UI/Loading';
+import LoadingScreen from '../../Components/UI/Loader';
 import ErrorScreen from '../../Components/UI/ErrorScreen';
 
 export default function ProfilePage() {

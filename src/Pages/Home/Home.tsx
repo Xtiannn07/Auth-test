@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../Contexts/AuthContexts';
 import TopNavigation from "../../Components/Navigation/TopNavigation";
 import BottomNavigation from "../../Components/Navigation/BottomNavigation";
-import LoadingScreen from '../../Components/UI/Loading';
+import LoadingScreen from '../../Components/UI/Loader';
 import ErrorScreen from '../../Components/UI/ErrorScreen'; // Added missing import
 
 // Main layout component
