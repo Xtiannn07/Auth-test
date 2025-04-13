@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../Contexts/AuthContexts';
 import Input from '../UI/Input';
@@ -6,14 +6,14 @@ import Button from '../UI/Button';
 import SignInFooter from './Footer';
 
 export default function SignIn() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [error, setError] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
+  const { login } = useAuth() as { login: (email: string, password: string) => Promise<void> };
   const navigate = useNavigate();
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     
     try {
@@ -22,7 +22,11 @@ export default function SignIn() {
       await login(email, password);
       navigate('/profile');
     } catch (error) {
-      setError('Failed to sign in: ' + error.message);
+      if (error instanceof Error) {
+        setError('Failed to sign in: ' + error.message);
+      } else {
+        setError('Failed to sign in');
+      }
     } finally {
       setLoading(false);
     }
@@ -34,7 +38,7 @@ export default function SignIn() {
     sessionStorage.clear();
     
     // Disable cache
-    window.onpageshow = (event) => {
+    window.onpageshow = (event: PageTransitionEvent) => {
       if (event.persisted) {
         window.location.reload();
       }
@@ -70,15 +74,15 @@ export default function SignIn() {
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
               <Input
-                id="email-address"
-                name="email"
-                type="text"
-                required
-                placeholder="Mobile number or email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3 py-3 border bg-[#f2f3f5] border-gray-400 rounded-xl"
-              />
+                  id="email-address"
+                  name="email"
+                  type="text"
+                  required={true}
+                  placeholder="Mobile number or email"
+                  value={email}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+                  className="w-full px-3 py-3 border bg-[#f2f3f5] border-gray-400 rounded-xl"
+                />
             </div>
             
             <div>
@@ -86,16 +90,17 @@ export default function SignIn() {
                 id="password"
                 name="password"
                 type="password"
-                required
+                required={true}
                 placeholder="Password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
                 className="w-full px-3 py-3 border bg-[#f2f3f5] border-gray-400 rounded-xl"
               />
             </div>
             
             <Button
               type="submit"
+              onClick={() => console.log('Button clicked')}
               disabled={loading}
               className="w-full text-white"
             >

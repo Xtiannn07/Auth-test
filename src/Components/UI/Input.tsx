@@ -1,15 +1,37 @@
-// src/components/UI/Input.jsx
+// In your Input component file (../UI/Input.tsx)
+import { ChangeEvent } from 'react';
 
-export default function Input({ type, placeholder, required, onChange, value, name, className }) {
+interface InputProps {
+  id: string;
+  name: string;
+  type: string;
+  required: boolean;
+  placeholder: string;
+  value: string;
+  onChange: (e: ChangeEvent<HTMLInputElement>) => void;
+  className: string;
+}
+
+export default function Input({
+  id,
+  name,
+  type,
+  required,
+  placeholder,
+  value,
+  onChange,
+  className
+}: InputProps) {
   return (
     <input
-      type={type || 'text'}
-      placeholder={placeholder}
-      required={required}
-      onChange={onChange}
-      value={value}
+      id={id}
       name={name}
-      className={`w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${className}`}
+      type={type}
+      required={required}
+      placeholder={placeholder}
+      value={value}
+      onChange={onChange}
+      className={className}
     />
   );
 }
