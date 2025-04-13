@@ -8,7 +8,7 @@ import BottomNavigation from "../../Components/Navigation/BottomNavigation";
 import ProfileHeader from './Header';
 import ProfileContent from './ProfileContent';
 import LoadingScreen from '../../Components/UI/Loading';
-import ErrorScreen from './ErrorScreen';
+import ErrorScreen from '../../Components/UI/ErrorScreen';
 
 export default function ProfilePage() {
   const [success, setSuccess] = useState('');
