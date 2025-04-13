@@ -3,7 +3,7 @@ import { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import SignIn from './Components/Auth/SignIn';
 import SignUp from './Components/Auth/SignUp';
-import UserProfile from './Components/Profile/UserProfile';
+import ForgotPassword from './Components/Auth/ForgotPassword';
 import { useAuth } from './Contexts/AuthContexts';
 import ProfilePage from './Pages/Profile/Profile'
 
@@ -35,6 +35,10 @@ const routes = [
   {
     path: '/signup',
     element: <SignUp />
+  },
+  {
+    path: '/forgot',
+    element: <ForgotPassword />
   },
   {
     path: '/profile',

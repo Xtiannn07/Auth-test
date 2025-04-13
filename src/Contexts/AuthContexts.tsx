@@ -5,7 +5,8 @@ import {
   signInWithEmailAndPassword,
   signOut, 
   onAuthStateChanged,
-  updateProfile 
+  updateProfile,
+  sendPasswordResetEmail // Added this import
 } from 'firebase/auth';
 import { auth } from '../Services/Firebase';
 
@@ -38,6 +39,11 @@ export function AuthProvider({ children }) {
     });
   }
 
+  // New function for password reset
+  function resetPassword(email) {
+    return sendPasswordResetEmail(auth, email);
+  }
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
@@ -52,7 +58,8 @@ export function AuthProvider({ children }) {
     signup,
     login,
     logout,
-    updateUserProfile
+    updateUserProfile,
+    resetPassword // Added to the context value
   };
 
   return (

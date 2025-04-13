@@ -110,7 +110,7 @@ export default function SignIn() {
             </div>
             
             <div className="text-center">
-              <Link to="/forgot-password" className="text-gray-600 text-sm font-medium ">
+              <Link to="/forgot" className="text-gray-600 text-sm font-medium ">
                 Forgot password?
               </Link>
             </div>
