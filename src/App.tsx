@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
-import { AuthProvider } from './Contexts/AuthContexts';
+import { AuthProvider } from './Contexts/AuthContext';
+import { LoadingProvider } from './Contexts/LoadingContext';
 import routes from './routes';
 
 function AppContent() {
@@ -21,17 +22,19 @@ function AppContent() {
 
   return (
     <AuthProvider>
-      <div className="min-h-screen body">
-        <Routes>
-          {routes.map((route, index) => (
-            <Route
-              key={index}
-              path={route.path}
-              element={route.element}
-            />
-          ))}
-        </Routes>
-      </div>
+      <LoadingProvider> 
+        <div className="min-h-screen body">
+          <Routes>
+            {routes.map((route, index) => (
+              <Route
+                key={index}
+                path={route.path}
+                element={route.element}
+              />
+            ))}
+          </Routes>
+        </div>
+      </LoadingProvider>
     </AuthProvider>
   );
 }

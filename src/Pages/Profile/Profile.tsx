@@ -1,26 +1,27 @@
-// ProfilePage.jsx
 import { useState, useEffect } from 'react';
-import { useAuth } from '../../Contexts/AuthContexts';
+import { useAuth } from '../../Contexts/AuthContext';
+import { useLoading } from '../../Contexts/LoadingContext'; // Add this
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../Services/Firebase';
 import TopNavigation from "../../Components/Navigation/TopNavigation";
 import BottomNavigation from "../../Components/Navigation/BottomNavigation";
 import ProfileHeader from './Header';
 import ProfileContent from './ProfileContent';
-import LoadingScreen from '../../Components/UI/Loader';
 import ErrorScreen from '../../Components/UI/ErrorScreen';
 
 export default function ProfilePage() {
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
   const [userData, setUserData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { setIsLoading } = useLoading(); // Replace local loading state
   const { currentUser } = useAuth();
   
   useEffect(() => {
     const fetchUserData = async () => {
       try {
         if (!currentUser) return;
+        
+        setIsLoading(true); // Use context loader instead of local state
         
         // Get additional user data from Firestore
         const userDocRef = doc(db, 'users', currentUser.uid);
@@ -56,16 +57,16 @@ export default function ProfilePage() {
             coverPhoto: null
           });
         }
-        setLoading(false);
       } catch (err) {
         console.error("Error fetching user data:", err);
         setError('Failed to load user data');
-        setLoading(false);
+      } finally {
+        setIsLoading(false); // Ensure loader is hidden in all cases
       }
     };
     
     fetchUserData();
-  }, [currentUser]);
+  }, [currentUser, setIsLoading]);
 
   const handleLogout = () => {
     // Your logout logic here
@@ -80,12 +81,21 @@ export default function ProfilePage() {
     setError(message);
   };
 
-  if (loading) {
-    return <LoadingScreen />;
+  if (error) {
+    return (
+      <div className="flex flex-col h-screen">
+        <TopNavigation 
+          username={userData?.username || ''} 
+          onLogout={handleLogout} 
+        />
+        <ErrorScreen message={error} />
+        <BottomNavigation />
+      </div>
+    );
   }
 
   if (!userData) {
-    return <ErrorScreen message="Failed to load profile data" />;
+    return null; // Let the layout loader handle the loading state
   }
 
   return (

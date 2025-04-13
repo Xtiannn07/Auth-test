@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '../../Contexts/AuthContexts';
+import { useAuth } from '../../Contexts/AuthContext';
 import TopNavigation from "../../Components/Navigation/TopNavigation";
 import BottomNavigation from "../../Components/Navigation/BottomNavigation";
 import LoadingScreen from '../../Components/UI/Loader';
@@ -69,7 +69,6 @@ export default function HomePage() {
           {/* Add your homepage components here */}
         </div>
       </main>
-      <BottomNavigation />
     </div>
   );
 }
