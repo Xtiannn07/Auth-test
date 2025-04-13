@@ -1,4 +1,4 @@
-// src/Pages/Home/Home.tsx
+// src/Pages/Search/Search.tsx
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../Contexts/AuthContexts';
 import { useLoading } from '../../Contexts/LoadingContext';
@@ -9,7 +9,7 @@ interface UserData {
   // Add other user properties as needed
 }
 
-export default function HomePage() {
+export default function SearchPage() {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [error, setError] = useState('');
   const { startLoading, stopLoading, resetLoading } = useLoading();
@@ -83,7 +83,7 @@ export default function HomePage() {
     >
       <div className="p-4">
         <h1 className="text-2xl font-bold mb-4">
-          Welcome, {userData?.username || 'User'}!
+          Search, {userData?.username || 'User'}!
         </h1>
         {/* Add your homepage content here */}
       </div>

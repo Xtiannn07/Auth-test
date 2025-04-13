@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../Contexts/AuthContext';
+import { useAuth } from '../../Contexts/AuthContexts';
 import Input from '../UI/Input';
 import Button from '../UI/Button';
 import SignInFooter from './Footer';

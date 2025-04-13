@@ -4,9 +4,10 @@ import { Navigate } from 'react-router-dom';
 import SignIn from './Components/Auth/SignIn';
 import SignUp from './Components/Auth/SignUp';
 import ForgotPassword from './Components/Auth/ForgotPassword';
-import { useAuth } from './Contexts/AuthContext';
+import { useAuth } from './Contexts/AuthContexts';
 import ProfilePage from './Pages/Profile/Profile';
 import HomePage from './Pages/Home/Home';
+import SearchPage from './Pages/Search/Search';
 import AuthenticatedLayout from './Pages/Layout';
 
 interface PrivateRouteProps {
@@ -45,6 +46,16 @@ const routes = [
       <PrivateRoute>
         <AuthenticatedLayout>
           <HomePage />
+        </AuthenticatedLayout>
+      </PrivateRoute>
+    )
+  },
+  {
+    path: '/search',
+    element: (
+      <PrivateRoute>
+        <AuthenticatedLayout>
+          <SearchPage />
         </AuthenticatedLayout>
       </PrivateRoute>
     )

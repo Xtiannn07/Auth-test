@@ -22,6 +22,15 @@ const config: Config = {
         'fb-mid': '#f0f2f5',    // Neutral midpoint
         'fb-right': '#f5f6f7',  // Warm white-gray
       },
+      animation: {
+        bounce: 'bounce 1.5s infinite ease-in-out'
+      },
+      keyframes: {
+        bounce: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-1rem)' }
+        }
+      },
     },
   },
   plugins: [require("tailwindcss-animate")],

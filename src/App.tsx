@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
-import { AuthProvider } from './Contexts/AuthContext';
+import { AuthProvider } from './Contexts/AuthContexts';
 import { LoadingProvider } from './Contexts/LoadingContext';
 import routes from './routes';
 
