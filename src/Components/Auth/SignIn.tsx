@@ -46,7 +46,7 @@ export default function SignIn() {
   }, []);
 
   return (
-    <div className="flex flex-col items-center min-h-screen py-2 px-4">
+    <div className="flex flex-col items-center min-h-screen py-2 px-4 ">
       {/* Main content wrapper that fills the available space */}
       <div className="w-full max-w-md flex flex-col items-center flex-1">
         {/* Language selector at top */}
@@ -54,11 +54,11 @@ export default function SignIn() {
           English (US)
         </div>
         
-        {/* Facebook logo */}
+        {/* Bookmark logo */}
         <div className="mb-22">
           <img 
-            src="./facebook-icon.svg" 
-            alt="Facebook" 
+            src="./Bookmark.png" 
+            alt="Bookmark" 
             className="h-14 w-14"
           />
         </div>
