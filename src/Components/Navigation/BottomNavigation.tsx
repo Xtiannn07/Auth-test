@@ -1,22 +1,57 @@
-import { Search, Home, Heart, Edit, User} from 'lucide-react';
+import { Search, Home, Heart, Edit, User } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
-// Bottom navigation component
 export default function BottomNavigation() {
-    const navItems = [
-      { icon: <Home className="h-6 w-6 text-gray-700" />, active: false },
-      { icon: <Search className="h-6 w-6 text-gray-500" />, active: false },
-      { icon: <Edit className="h-6 w-6 text-gray-500" />, active: false },
-      { icon: <Heart className="h-6 w-6 text-gray-500" />, active: false },
-      { icon: <User className="h-6 w-6 text-black" />, active: true }
-    ];
-    
-    return (
-      <div className="flex items-center justify-around py-3 border-t border-gray-200 bg-white">
-        {navItems.map((item, index) => (
-          <button key={index} className="p-1">
-            {item.icon}
-          </button>
-        ))}
-      </div>
-    );
-  }
+  const navigate = useNavigate();
+  
+  const navItems = [
+    { 
+      icon: <Home size={24} />, 
+      active: false,
+      route: '/home',
+      className: "text-gray-700" 
+    },
+    { 
+      icon: <Search size={24} />, 
+      active: false,
+      route: '/search',
+      className: "text-gray-500" 
+    },
+    { 
+      icon: <Edit size={24} />, 
+      active: false,
+      route: '/create',
+      className: "text-gray-500" 
+    },
+    { 
+      icon: <Heart size={24} />, 
+      active: false,
+      route: '/activity',
+      className: "text-gray-500" 
+    },
+    { 
+      icon: <User size={24} />, 
+      active: true,
+      route: '/profile',
+      className: "text-black" 
+    }
+  ];
+  
+  const handleNavigation = (route) => {
+    navigate(route);
+  };
+
+  return (
+    <div className="flex items-center justify-around py-3 border-t border-gray-200 bg-white">
+      {navItems.map((item, index) => (
+        <button 
+          key={index} 
+          className={`p-1 ${item.className}`}
+          onClick={() => handleNavigation(item.route)}
+        >
+          {item.icon}
+        </button>
+      ))}
+    </div>
+  );
+}

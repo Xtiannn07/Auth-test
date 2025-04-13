@@ -6,6 +6,7 @@ import SignUp from './Components/Auth/SignUp';
 import ForgotPassword from './Components/Auth/ForgotPassword';
 import { useAuth } from './Contexts/AuthContexts';
 import ProfilePage from './Pages/Profile/Profile'
+import HomePage from './Pages/Home/Home';
 
 // Define interface for the component props
 interface PrivateRouteProps {
@@ -39,6 +40,12 @@ const routes = [
   {
     path: '/forgot',
     element: <ForgotPassword />
+  },
+  {
+    path: '/home',
+    element: (
+        <HomePage />
+    )
   },
   {
     path: '/profile',
