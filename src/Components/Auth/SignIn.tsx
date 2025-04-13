@@ -98,14 +98,16 @@ export default function SignIn() {
               />
             </div>
             
-            <Button
-              type="submit"
-              onClick={() => console.log('Button clicked')}
-              disabled={loading}
-              className="w-full text-white"
-            >
-              {loading ? 'Logging in...' : 'Log in'}
-            </Button>
+            <div className='w-full max-w-md flex p-[1px] rounded-3xl bg-white'>
+              <Button
+                type="submit"
+                onClick={() => console.log('Button clicked')}
+                disabled={loading}
+                className="w-full text-white rounded-3xl border-1 border-white"
+              >
+                {loading ? 'Logging in...' : 'Log in'}
+              </Button>
+            </div>
             
             <div className="text-center">
               <Link to="/forgot-password" className="text-gray-600 text-sm font-medium ">

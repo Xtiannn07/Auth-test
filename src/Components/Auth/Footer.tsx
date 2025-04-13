@@ -3,11 +3,14 @@ import { Link } from 'react-router-dom';
 export default function SignInFooter() {
   return (
     <div className="w-full mt-auto flex flex-col items-center">
-      <div className="w-full max-w-md flex">
+      <div className="w-full max-w-md flex p-[1px] rounded-3xl bg-gradient-to-r from-purple-400 to-blue-300">
         <Link 
-          to="/signup" 
-          className="w-full text-center border border-blue-600 hover:border-blue-700 active:border-blue-800 text-blue-600 hover:text-blue-700 active:text-blue-800 font-semibold mt-4 py-2 px-4 rounded-3xl bg-transparent">
-          Create new account
+            to="/signup" 
+            className="group w-full text-center bg-white bg-opacity-0 text-blue-600 font-semibold py-2 px-4 rounded-3xl"
+            >
+            <span className="inline-block group-hover:scale-105 transition-transform duration-150">
+              Create new account
+          </span>
         </Link>
       </div>
       
@@ -16,9 +19,9 @@ export default function SignInFooter() {
         <img 
           src="/meta-icon.svg"
           alt="Meta" 
-          className="h-4 filter grayscale contrast-50"
+          className="h-4 filter grayscale contrast-50 rotate-180"
         />
-        <span className="text-gray-600 text-sm font-medium">Meta</span>
+        <span className="text-gray-600 text-sm font-medium">Metange</span>
       </div>
       
       {/* Footer links */}

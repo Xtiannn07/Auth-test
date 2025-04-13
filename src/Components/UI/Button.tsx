@@ -1,14 +1,15 @@
-// src/components/UI/Button.jsx
-
+// src/Components/UI/Button.tsx
 export default function Button({ type, onClick, children, disabled, className }) {
   return (
     <button
       type={type || 'button'}
       onClick={onClick}
       disabled={disabled}
-      className={`px-4 py-2 font-medium text-white bg-blue-600 rounded-3xl transform hover:scale-95 transition duration-150 disabled:opacity-80 ${className}`}
+      className={`group px-4 py-2 font-medium text-white bg-gradient-to-r from-purple-400 to-blue-300 rounded-3xl transition duration-150 disabled:opacity-80 ${className}`}
     >
-      {children}
+      <span className="inline-block group-hover:scale-110 transition-transform duration-150">
+        {children}
+      </span>
     </button>
   );
 }
