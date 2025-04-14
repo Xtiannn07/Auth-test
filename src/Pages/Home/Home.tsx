@@ -1,11 +1,13 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '../../Contexts/AuthContexts'; // Fixed path if needed
+// src/Pages/HomePage.tsx
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useAuth } from '../../Contexts/AuthContexts';
 import { useLoading } from '../../Contexts/LoadingContext';
 import AuthenticatedLayout from '../Layout';
-import PostCard from '../../Components/UI/PostCard'; // Fixed path
-import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import PostCard from '../PostComponents/PostCard';
+import { collection, query, orderBy, onSnapshot, limit, startAfter, getDocs } from 'firebase/firestore';
 import { db } from '../../Services/Firebase';
 import { Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface UserData {
   username: string;
@@ -22,15 +24,26 @@ interface Post {
   };
   createdAt: any;
   likes: string[];
+  savedBy?: string[];
+  reposts?: number;
+  comments?: any[];
 }
+
+const POSTS_PER_PAGE = 5;
 
 export default function HomePage() {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [error, setError] = useState('');
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [lastVisible, setLastVisible] = useState<any>(null);
+  const [hasMore, setHasMore] = useState(true);
   const { startLoading, stopLoading, resetLoading } = useLoading();
   const { currentUser } = useAuth();
-
+  
+  // For intersection observer
+  const loaderRef = useRef<HTMLDivElement>(null);
+  
   const fetchUserData = useCallback(async () => {
     try {
       if (!currentUser) return;
@@ -53,43 +66,142 @@ export default function HomePage() {
     }
   }, [currentUser, startLoading, stopLoading, resetLoading]);
 
-  const setupPostsListener = useCallback(() => {
-    startLoading('Loading posts...');
+  const initializePosts = useCallback(async () => {
+    try {
+      startLoading('Loading posts...');
+      
+      const postsRef = collection(db, 'posts');
+      const q = query(
+        postsRef,
+        orderBy('createdAt', 'desc'),
+        limit(POSTS_PER_PAGE)
+      );
+      
+      const querySnapshot = await getDocs(q);
+      const postsData = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as Post[];
+      
+      setPosts(postsData);
+      
+      // Get the last visible document
+      const lastDoc = querySnapshot.docs[querySnapshot.docs.length - 1];
+      setLastVisible(lastDoc);
+      setHasMore(querySnapshot.docs.length === POSTS_PER_PAGE);
+      
+    } catch (err) {
+      console.error("Error loading posts:", err);
+      setError('Failed to load posts');
+    } finally {
+      stopLoading();
+    }
+  }, [startLoading, stopLoading]);
+  
+  const loadMorePosts = useCallback(async () => {
+    if (!hasMore || loadingMore || !lastVisible) return;
     
-    const postsQuery = query(
+    try {
+      setLoadingMore(true);
+      
+      const postsRef = collection(db, 'posts');
+      const q = query(
+        postsRef,
+        orderBy('createdAt', 'desc'),
+        startAfter(lastVisible),
+        limit(POSTS_PER_PAGE)
+      );
+      
+      const querySnapshot = await getDocs(q);
+      const newPostsData = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as Post[];
+      
+      setPosts(prevPosts => [...prevPosts, ...newPostsData]);
+      
+      // Update the last visible document
+      const lastDoc = querySnapshot.docs[querySnapshot.docs.length - 1];
+      setLastVisible(lastDoc);
+      setHasMore(querySnapshot.docs.length === POSTS_PER_PAGE);
+      
+    } catch (err) {
+      console.error("Error loading more posts:", err);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [hasMore, lastVisible, loadingMore]);
+  
+  // Set up post updates listener
+  useEffect(() => {
+    const unsubscribe = onSnapshot(
       collection(db, 'posts'),
-      orderBy('createdAt', 'desc')
-    );
-    
-    const unsubscribe = onSnapshot(postsQuery, 
-      (querySnapshot) => {
-        const postsData = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as Post[];
-        
-        setPosts(postsData);
-        stopLoading();
+      (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+          if (change.type === 'modified') {
+            // Update the modified post
+            setPosts(prevPosts => 
+              prevPosts.map(post => 
+                post.id === change.doc.id ? { id: change.doc.id, ...change.doc.data() } as Post : post
+              )
+            );
+          } else if (change.type === 'added') {
+            // Check if the added post is newer than our newest post
+            const newPost = { id: change.doc.id, ...change.doc.data() } as Post;
+            const isNewer = posts.length === 0 || 
+              (newPost.createdAt && posts[0].createdAt && 
+               newPost.createdAt.toDate() > posts[0].createdAt.toDate());
+            
+            if (isNewer) {
+              // Add the new post at the beginning
+              setPosts(prevPosts => [newPost, ...prevPosts]);
+            }
+          } else if (change.type === 'removed') {
+            // Remove the deleted post
+            setPosts(prevPosts => 
+              prevPosts.filter(post => post.id !== change.doc.id)
+            );
+          }
+        });
       },
       (error) => {
-        console.error("Error loading posts:", error);
-        setError('Failed to load posts');
-        stopLoading();
+        console.error("Error in posts listener:", error);
       }
     );
     
-    return unsubscribe;
-  }, [startLoading, stopLoading]);
-
+    return () => unsubscribe();
+  }, [posts.length]);
+  
+  // Initialize intersection observer for infinite scrolling
   useEffect(() => {
-    fetchUserData();
-    const unsubscribe = setupPostsListener();
+    const observer = new IntersectionObserver(
+      entries => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore) {
+          loadMorePosts();
+        }
+      },
+      { threshold: 0.5 }
+    );
+    
+    if (loaderRef.current) {
+      observer.observe(loaderRef.current);
+    }
     
     return () => {
-      unsubscribe();
+      if (loaderRef.current) {
+        observer.unobserve(loaderRef.current);
+      }
+    };
+  }, [hasMore, loadMorePosts, loadingMore]);
+  
+  useEffect(() => {
+    fetchUserData();
+    initializePosts();
+    
+    return () => {
       resetLoading();
     };
-  }, [fetchUserData, setupPostsListener, resetLoading]);
+  }, [fetchUserData, initializePosts, resetLoading]);
 
   const handleLogout = () => {
     // Your logout logic here
@@ -99,11 +211,16 @@ export default function HomePage() {
   const handleRetry = () => {
     setError('');
     fetchUserData();
-    setupPostsListener();
+    initializePosts();
   };
 
   const handleLikeUpdate = () => {
-    // This will trigger a refresh of the posts through the listener
+    // No need to do anything as the listener will handle updates
+  };
+  
+  const handleDeletePost = (postId: string) => {
+    // The listener will handle the removal, but we can optimize by removing it immediately
+    setPosts(prevPosts => prevPosts.filter(post => post.id !== postId));
   };
 
   if (error) {
@@ -144,22 +261,40 @@ export default function HomePage() {
           </Link>
         </div>
         
-        <div className="space-y-4">
-          {posts.length > 0 ? (
-            posts.map(post => (
-              <PostCard 
-                key={post.id} 
-                post={post} 
-                onLikeUpdate={handleLikeUpdate}
-                currentUser={currentUser} // Pass currentUser as prop
-              />
-            ))
-          ) : (
-            <div className="text-center py-8 text-gray-500">
-              No posts found. Be the first to create one!
-            </div>
-          )}
-        </div>
+        <AnimatePresence>
+          <div className="space-y-4">
+            {posts.length > 0 ? (
+              posts.map(post => (
+                <PostCard 
+                  key={post.id} 
+                  post={post} 
+                  onLikeUpdate={handleLikeUpdate}
+                  onDeletePost={handleDeletePost}
+                  currentUser={currentUser}
+                />
+              ))
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                No posts found. Be the first to create one!
+              </div>
+            )}
+            
+            {/* Loader for infinite scrolling */}
+            {hasMore && (
+              <div ref={loaderRef} className="py-4 text-center">
+                {loadingMore ? (
+                  <div className="flex justify-center items-center space-x-2">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                  </div>
+                ) : (
+                  <span className="text-gray-400">Scroll for more</span>
+                )}
+              </div>
+            )}
+          </div>
+        </AnimatePresence>
       </div>
     </AuthenticatedLayout>
   );
