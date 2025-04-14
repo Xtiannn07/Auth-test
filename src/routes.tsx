@@ -49,7 +49,11 @@ const routes = [
           <HomePage />
         </AuthenticatedLayout>
       </PrivateRoute>
-    )
+    ),
+    loader: async () => {
+      const response = await fetch('/api/home-data');
+      return response.json();
+    }
   },
   {
     path: '/search',
@@ -59,7 +63,11 @@ const routes = [
           <SearchPage />
         </AuthenticatedLayout>
       </PrivateRoute>
-    )
+    ),
+    loader: async () => {
+      const response = await fetch('/api/home-data');
+      return response.json();
+    }
   },
   {
     path: '/post',

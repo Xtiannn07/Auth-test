@@ -64,7 +64,8 @@ export function usePostActions({ post, currentUser, onLikeUpdate, onDeletePost }
     }
   };
   
-  const handleSaveToggle = async () => {
+
+const handleSaveToggle = async () => {
     if (!currentUser) return;
     
     setIsSaving(true);

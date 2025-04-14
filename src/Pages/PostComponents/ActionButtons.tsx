@@ -15,6 +15,7 @@ interface ActionButtonsProps {
   onLikeToggle: () => Promise<void>;
   onRepost: () => Promise<void>;
   onSaveToggle: () => Promise<void>;
+  onComment: () => void;
   isLiking: boolean;
   isReposting: boolean;
   isSaving: boolean;
@@ -28,6 +29,7 @@ export function ActionButtons({
   onLikeToggle, 
   onRepost, 
   onSaveToggle,
+  onComment,
   isLiking,
   isReposting,
   isSaving
@@ -43,16 +45,18 @@ export function ActionButtons({
         } transition-colors disabled:opacity-50`}
         aria-label={isLiked ? "Unlike post" : "Like post"}
       >
-        <Heart isLiked={isLiked} />
+        <Heart fill={isLiked ? "currentColor" : "none"} size={20} />
         <span>{post.likes.length}</span>
       </button>
       
       {/* Comment Button */}
       <button
-        className="flex items-center space-x-1 px-2 py-1 rounded hover:bg-gray-100 transition-colors"
+        onClick={onComment}
+        disabled={!currentUser}
+        className="flex items-center space-x-1 px-2 py-1 rounded hover:bg-gray-100 transition-colors disabled:opacity-50"
         aria-label="Comment on post"
       >
-        <MessageSquare />
+        <MessageSquare size={20} />
         <span>{post.comments?.length || 0}</span>
       </button>
       
@@ -63,7 +67,7 @@ export function ActionButtons({
         className="flex items-center space-x-1 px-2 py-1 rounded hover:bg-gray-100 transition-colors disabled:opacity-50"
         aria-label="Repost"
       >
-        <Repeat2 />
+        <Repeat2 size={20} />
         <span>{post.reposts || 0}</span>
       </button>
       
@@ -76,7 +80,7 @@ export function ActionButtons({
         } transition-colors disabled:opacity-50`}
         aria-label={isSaved ? "Unsave post" : "Save post"}
       >
-        <Bookmark isSaved={isSaved} />
+        <Bookmark fill={isSaved ? "currentColor" : "none"} size={20} />
       </button>
     </div>
   );

@@ -133,52 +133,68 @@ export default function HomePage() {
   }, [hasMore, lastVisible, loadingMore]);
   
   // Set up post updates listener - OPTIMIZED to reduce unnecessary fetches
-  useEffect(() => {
-    // Create a single listener for all posts instead of one per post
-    const unsubscribe = onSnapshot(
+useEffect(() => {
+  let unsubscribe: () => void;
+  
+  const setupListener = async () => {
+    // First get the initial batch of posts
+    const initialQuery = query(
+      collection(db, 'posts'),
+      orderBy('createdAt', 'desc'),
+      limit(POSTS_PER_PAGE)
+    );
+    
+    const initialSnapshot = await getDocs(initialQuery);
+    const initialPosts = initialSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as Post[];
+    
+    setPosts(initialPosts);
+    setLastVisible(initialSnapshot.docs[initialSnapshot.docs.length - 1]);
+    setHasMore(initialSnapshot.docs.length === POSTS_PER_PAGE);
+    
+    // Then set up the real-time listener for changes
+    unsubscribe = onSnapshot(
       query(collection(db, 'posts'), orderBy('createdAt', 'desc')),
       (snapshot) => {
         snapshot.docChanges().forEach((change) => {
           const changedPost = { id: change.doc.id, ...change.doc.data() } as Post;
           
-          if (change.type === 'modified') {
-            // Update the modified post
-            setPosts(prevPosts => 
-              prevPosts.map(post => 
+          setPosts(prevPosts => {
+            // Handle modifications
+            if (change.type === 'modified') {
+              return prevPosts.map(post => 
                 post.id === change.doc.id ? changedPost : post
-              )
-            );
-          } else if (change.type === 'added') {
-            // Only add new posts that aren't already in our list
-            setPosts(prevPosts => {
-              const postExists = prevPosts.some(post => post.id === changedPost.id);
-              if (!postExists && changedPost.createdAt) {
-                // Check if it's newer than our newest post
-                const isNewerThanFirst = prevPosts.length === 0 || 
-                  (prevPosts[0].createdAt && 
-                   changedPost.createdAt.toDate() > prevPosts[0].createdAt.toDate());
-                
-                if (isNewerThanFirst) {
-                  return [changedPost, ...prevPosts];
-                }
+              );
+            }
+            // Handle additions (only if not already in the list)
+            if (change.type === 'added') {
+              const exists = prevPosts.some(p => p.id === changedPost.id);
+              if (!exists) {
+                return [changedPost, ...prevPosts];
               }
-              return prevPosts;
-            });
-          } else if (change.type === 'removed') {
-            // Remove the deleted post
-            setPosts(prevPosts => 
-              prevPosts.filter(post => post.id !== change.doc.id)
-            );
-          }
+            }
+            // Handle deletions
+            if (change.type === 'removed') {
+              return prevPosts.filter(post => post.id !== change.doc.id);
+            }
+            return prevPosts;
+          });
         });
       },
       (error) => {
         console.error("Error in posts listener:", error);
       }
     );
-    
-    return () => unsubscribe();
-  }, []); // Remove dependency on posts to prevent re-creating the listener
+  };
+
+  setupListener();
+  
+  return () => {
+    if (unsubscribe) unsubscribe();
+  };
+}, []); // Remove dependency on posts to prevent re-creating the listener
   
   // Initialize intersection observer for infinite scrolling
   useEffect(() => {

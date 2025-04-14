@@ -12,10 +12,10 @@ function AppContent() {
       const logoutTime = localStorage.getItem('logoutTimestamp');
       if (logoutTime && parseInt(logoutTime) > Date.now() - 10000) {
         navigate('/signin', { replace: true });
-        window.location.reload();
       }
     };
 
+    checkAuth(); // Run once on mount
     window.addEventListener('popstate', checkAuth);
     return () => window.removeEventListener('popstate', checkAuth);
   }, [navigate]);
