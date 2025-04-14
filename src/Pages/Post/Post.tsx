@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAuth } from '../../Contexts/AuthContexts';
+import { useAuth } from '../../Contexts/AuthContexts'; // Fixed path if needed
 import { useLoading } from '../../Contexts/LoadingContext';
 import AuthenticatedLayout from '../Layout';
 import { db } from '../../Services/Firebase';

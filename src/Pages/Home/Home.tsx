@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '../../Contexts/AuthContexts';
+import { useAuth } from '../../Contexts/AuthContexts'; // Fixed path if needed
 import { useLoading } from '../../Contexts/LoadingContext';
 import AuthenticatedLayout from '../Layout';
-import PostCard from '../../Components/UI/PostCard';
+import PostCard from '../../Components/UI/PostCard'; // Fixed path
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '../../Services/Firebase';
 import { Link } from 'react-router-dom';
@@ -151,6 +151,7 @@ export default function HomePage() {
                 key={post.id} 
                 post={post} 
                 onLikeUpdate={handleLikeUpdate}
+                currentUser={currentUser} // Pass currentUser as prop
               />
             ))
           ) : (
