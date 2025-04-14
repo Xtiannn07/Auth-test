@@ -1,4 +1,4 @@
-// src/components/PostComponents/PostHeader.tsx
+// src/Pages/PostComponents/PostHeader.tsx
 import { DeleteMenu } from './DeletedMenu';
 import { formatDate } from '../../utils/dateUtils';
 

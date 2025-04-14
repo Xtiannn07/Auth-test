@@ -1,4 +1,4 @@
-// src/components/PostComponents/ActionButtons.tsx
+// src/Pages/PostComponents/ActionButtons.tsx
 import {MessageSquare, Bookmark, Repeat2, Heart} from 'lucide-react';
 
 interface ActionButtonsProps {

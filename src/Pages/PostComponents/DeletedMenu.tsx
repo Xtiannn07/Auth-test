@@ -1,5 +1,5 @@
-// src/components/PostComponents/DeleteMenu.tsx
-import React, { useRef, useEffect } from 'react';
+// src/Pages/PostComponents/DeletedMenu.tsx
+import { useRef, useEffect } from 'react';
 import {EllipsisVertical } from 'lucide-react';
 
 interface DeleteMenuProps {

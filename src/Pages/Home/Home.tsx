@@ -1,4 +1,4 @@
-// src/Pages/HomePage.tsx
+// src/Pages/Home.tsx
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../../Contexts/AuthContexts';
 import { useLoading } from '../../Contexts/LoadingContext';
@@ -132,30 +132,38 @@ export default function HomePage() {
     }
   }, [hasMore, lastVisible, loadingMore]);
   
-  // Set up post updates listener
+  // Set up post updates listener - OPTIMIZED to reduce unnecessary fetches
   useEffect(() => {
+    // Create a single listener for all posts instead of one per post
     const unsubscribe = onSnapshot(
-      collection(db, 'posts'),
+      query(collection(db, 'posts'), orderBy('createdAt', 'desc')),
       (snapshot) => {
         snapshot.docChanges().forEach((change) => {
+          const changedPost = { id: change.doc.id, ...change.doc.data() } as Post;
+          
           if (change.type === 'modified') {
             // Update the modified post
             setPosts(prevPosts => 
               prevPosts.map(post => 
-                post.id === change.doc.id ? { id: change.doc.id, ...change.doc.data() } as Post : post
+                post.id === change.doc.id ? changedPost : post
               )
             );
           } else if (change.type === 'added') {
-            // Check if the added post is newer than our newest post
-            const newPost = { id: change.doc.id, ...change.doc.data() } as Post;
-            const isNewer = posts.length === 0 || 
-              (newPost.createdAt && posts[0].createdAt && 
-               newPost.createdAt.toDate() > posts[0].createdAt.toDate());
-            
-            if (isNewer) {
-              // Add the new post at the beginning
-              setPosts(prevPosts => [newPost, ...prevPosts]);
-            }
+            // Only add new posts that aren't already in our list
+            setPosts(prevPosts => {
+              const postExists = prevPosts.some(post => post.id === changedPost.id);
+              if (!postExists && changedPost.createdAt) {
+                // Check if it's newer than our newest post
+                const isNewerThanFirst = prevPosts.length === 0 || 
+                  (prevPosts[0].createdAt && 
+                   changedPost.createdAt.toDate() > prevPosts[0].createdAt.toDate());
+                
+                if (isNewerThanFirst) {
+                  return [changedPost, ...prevPosts];
+                }
+              }
+              return prevPosts;
+            });
           } else if (change.type === 'removed') {
             // Remove the deleted post
             setPosts(prevPosts => 
@@ -170,7 +178,7 @@ export default function HomePage() {
     );
     
     return () => unsubscribe();
-  }, [posts.length]);
+  }, []); // Remove dependency on posts to prevent re-creating the listener
   
   // Initialize intersection observer for infinite scrolling
   useEffect(() => {

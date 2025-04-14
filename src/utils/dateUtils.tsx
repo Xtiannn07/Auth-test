@@ -1,4 +1,5 @@
-// src/utils/dateUtils.ts
+// Utility file to handle date formatting
+// src/components/PostComponents/utils/dateUtils.ts
 export const formatDate = (timestamp: any) => {
     if (!timestamp || !timestamp.toDate) {
       return 'Just now';

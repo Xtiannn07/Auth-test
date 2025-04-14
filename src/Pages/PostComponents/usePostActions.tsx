@@ -1,4 +1,4 @@
-// src/components/PostComponents/usePostActions.ts
+// src/Pages/PostComponents/usePostActions.ts
 import { useState } from 'react';
 import { doc, updateDoc, arrayUnion, arrayRemove, deleteDoc } from 'firebase/firestore';
 import { db } from '../../Services/Firebase';
@@ -6,9 +6,17 @@ import { db } from '../../Services/Firebase';
 interface UsePostActionsProps {
   post: {
     id: string;
+    title: string;
+    content: string;
+    author: {
+      id: string;
+      name: string;
+    };
+    createdAt: any;
     likes: string[];
     savedBy?: string[];
     reposts?: number;
+    comments?: any[];
   };
   currentUser: any;
   onLikeUpdate?: () => void;
@@ -24,7 +32,7 @@ export function usePostActions({ post, currentUser, onLikeUpdate, onDeletePost }
   
   const isLiked = currentUser && post.likes.includes(currentUser.uid);
   const isSaved = currentUser && post.savedBy?.includes(currentUser.uid);
-  const isOwnPost = currentUser && post.author?.id === currentUser.uid;
+  const isOwnPost = currentUser && post.author.id === currentUser.uid;
   
   const handleLikeToggle = async () => {
     if (!currentUser) return;
