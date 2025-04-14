@@ -49,7 +49,7 @@ export default function BottomNavigation() {
   const navItems = [
     { icon: <Home />, route: '/home' },
     { icon: <Search />, route: '/search'},
-    { icon: <Edit />, route: '/create'},
+    { icon: <Edit />, route: '/post'},
     { icon: <Heart />, route: '/activity' },
     { icon: <User />, route: '/profile', }
   ];

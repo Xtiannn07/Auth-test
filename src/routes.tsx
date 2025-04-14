@@ -8,6 +8,7 @@ import { useAuth } from './Contexts/AuthContexts';
 import ProfilePage from './Pages/Profile/Profile';
 import HomePage from './Pages/Home/Home';
 import SearchPage from './Pages/Search/Search';
+import PostPage from './Pages/Post/Post';
 import AuthenticatedLayout from './Pages/Layout';
 
 interface PrivateRouteProps {
@@ -56,6 +57,16 @@ const routes = [
       <PrivateRoute>
         <AuthenticatedLayout>
           <SearchPage />
+        </AuthenticatedLayout>
+      </PrivateRoute>
+    )
+  },
+  {
+    path: '/post',
+    element: (
+      <PrivateRoute>
+        <AuthenticatedLayout>
+          <PostPage/>
         </AuthenticatedLayout>
       </PrivateRoute>
     )
