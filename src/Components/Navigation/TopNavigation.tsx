@@ -1,16 +1,18 @@
 import { ArrowLeft, MoreHorizontal, LogOut } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../Contexts/AuthContexts';
 
 interface TopNavigationProps {
   username: string;
-  onLogout?: () => Promise<void> | void;
+  onLogout?: () => void;
 }
 
 export default function TopNavigation({ username, onLogout }: TopNavigationProps) {
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const { logout } = useAuth();
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -26,45 +28,17 @@ export default function TopNavigation({ username, onLogout }: TopNavigationProps
 
   const handleLogout = async () => {
     try {
-      // Call the provided logout function if it exists
+      // Use the logout function from AuthContext that dispatches Redux action
+      await logout();
+      // Use the parent component's onLogout if provided
       if (onLogout) {
-        await onLogout();
+        onLogout();
       }
-      
-      // Clear all authentication tokens and user data
-      localStorage.clear();
-      sessionStorage.clear();
-      
-      // Set a logout timestamp
-      localStorage.setItem('logoutTimestamp', Date.now().toString());
-      
-      // Redirect to sign-in page with no-cache headers
-      navigate('/signin', {
-        replace: true,
-        state: { from: 'logout' }
-      });
-      
-      // Force reload to clear any cached sensitive data
-      window.location.reload();
+      navigate('/signin');
     } catch (error) {
       console.error('Logout failed:', error);
-    } finally {
-      setShowMenu(false);
     }
   };
-
-  // Add beforeunload listener to prevent caching
-  useEffect(() => {
-    window.addEventListener('beforeunload', () => {
-      localStorage.removeItem('authToken');
-    });
-    
-    return () => {
-      window.removeEventListener('beforeunload', () => {
-        localStorage.removeItem('authToken');
-      });
-    };
-  }, []);
 
   return (
     <div className="flex items-center justify-between p-4 border-b border-gray-200">

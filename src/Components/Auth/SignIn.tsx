@@ -8,27 +8,18 @@ import SignInFooter from './Footer';
 export default function SignIn() {
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
-  const [error, setError] = useState<string>('');
-  const [loading, setLoading] = useState<boolean>(false);
-  const { login } = useAuth() as { login: (email: string, password: string) => Promise<void> };
+  const { login, error, loading } = useAuth();
   const navigate = useNavigate();
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     
     try {
-      setError('');
-      setLoading(true);
       await login(email, password);
-      navigate('/profile');
-    } catch (error) {
-      if (error instanceof Error) {
-        setError('Failed to sign in: ' + error.message);
-      } else {
-        setError('Failed to sign in');
-      }
-    } finally {
-      setLoading(false);
+      navigate('/home');
+    } catch (err) {
+      // Error handling is done in the auth context/redux
+      console.error('Login failed:', err);
     }
   }
 
@@ -74,15 +65,15 @@ export default function SignIn() {
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
               <Input
-                  id="email-address"
-                  name="email"
-                  type="text"
-                  required={true}
-                  placeholder="Mobile number or email"
-                  value={email}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
-                  className="w-full px-3 py-3 border bg-[#f2f3f5] border-gray-400 rounded-xl"
-                />
+                id="email-address"
+                name="email"
+                type="text"
+                required={true}
+                placeholder="Mobile number or email"
+                value={email}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+                className="w-full px-3 py-3 border bg-[#f2f3f5] border-gray-400 rounded-xl"
+              />
             </div>
             
             <div>

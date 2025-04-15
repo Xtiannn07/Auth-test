@@ -43,7 +43,6 @@ function AppContent() {
               key={index}
               path={route.path}
               element={route.element}
-              loader={route.loader}
             />
           ))}
         </Routes>

@@ -1,3 +1,4 @@
+// src/routes.tsx
 import { lazy, Suspense, ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from './Contexts/AuthContexts';
@@ -26,6 +27,21 @@ const LazyRoute = ({ component: Component }: { component: React.ComponentType })
   </Suspense>
 );
 
+const AuthenticatedRouteWrapper = ({ children }: { children: ReactNode }) => {
+  const { currentUser, logout } = useAuth();
+
+  return (
+    <AuthenticatedLayout 
+      topNavProps={{
+        username: currentUser?.displayName || currentUser?.email?.split('@')[0] || 'User',
+        onLogout: logout
+      }}
+    >
+      {children}
+    </AuthenticatedLayout>
+  );
+};
+
 const routes = [
   {
     path: '/',
@@ -47,9 +63,9 @@ const routes = [
     path: '/home',
     element: (
       <PrivateRoute>
-        <AuthenticatedLayout>
+        <AuthenticatedRouteWrapper>
           <LazyRoute component={HomePage} />
-        </AuthenticatedLayout>
+        </AuthenticatedRouteWrapper>
       </PrivateRoute>
     ),
   },
@@ -57,9 +73,9 @@ const routes = [
     path: '/search',
     element: (
       <PrivateRoute>
-        <AuthenticatedLayout>
+        <AuthenticatedRouteWrapper>
           <LazyRoute component={SearchPage} />
-        </AuthenticatedLayout>
+        </AuthenticatedRouteWrapper>
       </PrivateRoute>
     ),
   },
@@ -67,9 +83,9 @@ const routes = [
     path: '/post',
     element: (
       <PrivateRoute>
-        <AuthenticatedLayout>
+        <AuthenticatedRouteWrapper>
           <LazyRoute component={PostPage} />
-        </AuthenticatedLayout>
+        </AuthenticatedRouteWrapper>
       </PrivateRoute>
     ),
   },
@@ -77,9 +93,9 @@ const routes = [
     path: '/profile',
     element: (
       <PrivateRoute>
-        <AuthenticatedLayout>
+        <AuthenticatedRouteWrapper>
           <LazyRoute component={ProfilePage} />
-        </AuthenticatedLayout>
+        </AuthenticatedRouteWrapper>
       </PrivateRoute>
     ),
   },

@@ -1,7 +1,6 @@
 // src/Pages/Search/Search.tsx
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../Contexts/AuthContexts';
-import { useLoading } from '../../Contexts/LoadingContext';
 import AuthenticatedLayout from '../Layout';
 
 interface UserData {

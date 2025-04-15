@@ -1,5 +1,5 @@
-// src/components/Auth/SignUp.jsx
-import { useState } from 'react';
+// src/components/Auth/SignUp.tsx
+import { useState, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../Contexts/AuthContexts';
 import Input from '../UI/Input';
@@ -11,34 +11,32 @@ export default function SignUp() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const { signup, updateUserProfile } = useAuth();
+  const [passwordError, setPasswordError] = useState('');
+  const { signup, error, loading } = useAuth();
   const navigate = useNavigate();
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     
+    // Clear previous errors
+    setPasswordError('');
+    
     if (password !== confirmPassword) {
-      return setError('Passwords do not match');
+      setPasswordError('Passwords do not match');
+      return;
     }
     
     try {
-      setError('');
-      setLoading(true);
-      const userCredential = await signup(email, password);
-      
-      if (displayName) {
-        await updateUserProfile(displayName, null);
-      }
-      
-      navigate('/profile');
-    } catch (error) {
-      setError('Failed to create an account: ' + error.message);
-    } finally {
-      setLoading(false);
+      await signup(email, password, displayName);
+      navigate('/home');
+    } catch (err) {
+      // Error handling is done in the auth context/redux
+      console.error('Signup failed:', err);
     }
   }
+
+  // Combine Redux error with local password error
+  const combinedError = passwordError || error;
 
   return (
     <div className="flex flex-col items-center min-h-screen py-2 px-4">
@@ -60,9 +58,9 @@ export default function SignUp() {
         
         {/* Form container */}
         <div className="w-full">
-          {error && (
+          {combinedError && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4" role="alert">
-              <span className="block sm:inline">{error}</span>
+              <span className="block sm:inline">{combinedError}</span>
             </div>
           )}
           
@@ -74,7 +72,7 @@ export default function SignUp() {
                 type="text"
                 placeholder="Display Name (optional)"
                 value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDisplayName(e.target.value)}
                 className="w-full px-3 py-3 border bg-[#f2f3f5] border-gray-400 rounded-xl"
               />
             </div>
@@ -87,7 +85,7 @@ export default function SignUp() {
                 required
                 placeholder="Email address"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
                 className="w-full px-3 py-3 border bg-[#f2f3f5] border-gray-400 rounded-xl"
               />
             </div>
@@ -100,7 +98,7 @@ export default function SignUp() {
                 required
                 placeholder="Password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
                 className="w-full px-3 py-3 border bg-[#f2f3f5] border-gray-400 rounded-xl"
               />
             </div>
@@ -113,7 +111,7 @@ export default function SignUp() {
                 required
                 placeholder="Confirm Password"
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConfirmPassword(e.target.value)}
                 className="w-full px-3 py-3 border bg-[#f2f3f5] border-gray-400 rounded-xl"
               />
             </div>

@@ -1,33 +1,24 @@
 // src/Layout.tsx
-import { ReactNode } from 'react';
+import { useSelector } from 'react-redux';
+import { RootState } from '../store/store';
 import TopNavigation from '../Components/Navigation/TopNavigation';
 import BottomNavigation from '../Components/Navigation/BottomNavigation';
 
-interface AuthenticatedLayoutProps {
-  children: React.ReactNode;
-  topNavProps?: {
-    username: string;
-    onLogout: () => void;
-  };
-}
+export default function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
+  const currentUser = useSelector((state: RootState) => state.auth.currentUser);
 
-export default function AuthenticatedLayout({ 
-  children, 
-  topNavProps 
-}: AuthenticatedLayoutProps) {
+  if (!currentUser) {
+    window.location.href = '/signin';
+    return null;
+  }
+
   return (
     <div className="flex flex-col h-screen bg-white">
-      {topNavProps && (
-        <header className="sticky top-0 z-50">
-          <TopNavigation {...topNavProps} />
-        </header>
-      )}
-      
-      <main className="flex-1 overflow-y-auto">
-        {children}
-      </main>
-      
-      <footer className="sticky bottom-0 z-50">
+      <header className="sticky top-0 z-50 bg-white shadow-sm">
+        <TopNavigation username={currentUser.email.split('@')[0]} />
+      </header>
+      <main className="flex-1 overflow-y-auto">{children}</main>
+      <footer className="sticky bottom-0 z-50 bg-white border-t">
         <BottomNavigation />
       </footer>
     </div>
