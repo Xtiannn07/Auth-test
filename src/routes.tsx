@@ -1,94 +1,88 @@
-// src/routes.ts
-import { ReactNode } from 'react';
+import { lazy, Suspense, ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
-import SignIn from './Components/Auth/SignIn';
-import SignUp from './Components/Auth/SignUp';
-import ForgotPassword from './Components/Auth/ForgotPassword';
 import { useAuth } from './Contexts/AuthContexts';
-import ProfilePage from './Pages/Profile/Profile';
-import HomePage from './Pages/Home/Home';
-import SearchPage from './Pages/Search/Search';
-import PostPage from './Pages/Post/Post';
 import AuthenticatedLayout from './Pages/Layout';
+
+const SignIn = lazy(() => import('./Components/Auth/SignIn'));
+const SignUp = lazy(() => import('./Components/Auth/SignUp'));
+const ForgotPassword = lazy(() => import('./Components/Auth/ForgotPassword'));
+const HomePage = lazy(() => import('./Pages/Home/Home'));
+const SearchPage = lazy(() => import('./Pages/Search/Search'));
+const PostPage = lazy(() => import('./Pages/Post/Post'));
+const ProfilePage = lazy(() => import('./Pages/Profile/Profile'));
 
 interface PrivateRouteProps {
   children: ReactNode;
 }
 
-interface AuthContextType {
-  currentUser: any;
-}
-
 function PrivateRoute({ children }: PrivateRouteProps) {
-  const { currentUser } = useAuth() as AuthContextType;
+  const { currentUser } = useAuth();
   return currentUser ? children : <Navigate to="/signin" />;
 }
+
+const LazyRoute = ({ component: Component }: { component: React.ComponentType }) => (
+  <Suspense fallback={<div>Loading...</div>}>
+    <Component />
+  </Suspense>
+);
 
 const routes = [
   {
     path: '/',
-    element: <Navigate to="/signin" />
+    element: <Navigate to="/signin" />,
   },
   {
     path: '/signin',
-    element: <SignIn />
+    element: <LazyRoute component={SignIn} />,
   },
   {
     path: '/signup',
-    element: <SignUp />
+    element: <LazyRoute component={SignUp} />,
   },
   {
     path: '/forgot',
-    element: <ForgotPassword />
+    element: <LazyRoute component={ForgotPassword} />,
   },
   {
     path: '/home',
     element: (
       <PrivateRoute>
         <AuthenticatedLayout>
-          <HomePage />
+          <LazyRoute component={HomePage} />
         </AuthenticatedLayout>
       </PrivateRoute>
     ),
-    loader: async () => {
-      const response = await fetch('/api/home-data');
-      return response.json();
-    }
   },
   {
     path: '/search',
     element: (
       <PrivateRoute>
         <AuthenticatedLayout>
-          <SearchPage />
+          <LazyRoute component={SearchPage} />
         </AuthenticatedLayout>
       </PrivateRoute>
     ),
-    loader: async () => {
-      const response = await fetch('/api/home-data');
-      return response.json();
-    }
   },
   {
     path: '/post',
     element: (
       <PrivateRoute>
         <AuthenticatedLayout>
-          <PostPage/>
+          <LazyRoute component={PostPage} />
         </AuthenticatedLayout>
       </PrivateRoute>
-    )
+    ),
   },
   {
     path: '/profile',
     element: (
       <PrivateRoute>
         <AuthenticatedLayout>
-          <ProfilePage />
+          <LazyRoute component={ProfilePage} />
         </AuthenticatedLayout>
       </PrivateRoute>
-    )
-  }
+    ),
+  },
 ];
 
 export default routes;

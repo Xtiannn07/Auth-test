@@ -1,40 +1,53 @@
-import { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+// src/App.tsx
+import { useEffect, useCallback } from 'react';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { AuthProvider } from './Contexts/AuthContexts';
-import { LoadingProvider } from './Contexts/LoadingContext';
 import routes from './routes';
 
 function AppContent() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const queryClient = useQueryClient();
+
+  const checkAuth = useCallback(() => {
+    const logoutTime = localStorage.getItem('logoutTimestamp');
+    if (logoutTime && parseInt(logoutTime) > Date.now() - 10000) {
+      navigate('/signin', { replace: true });
+    }
+  }, [navigate]);
 
   useEffect(() => {
-    const checkAuth = () => {
-      const logoutTime = localStorage.getItem('logoutTimestamp');
-      if (logoutTime && parseInt(logoutTime) > Date.now() - 10000) {
-        navigate('/signin', { replace: true });
-      }
-    };
-
-    checkAuth(); // Run once on mount
+    checkAuth();
     window.addEventListener('popstate', checkAuth);
     return () => window.removeEventListener('popstate', checkAuth);
-  }, [navigate]);
+  }, [checkAuth]);
+
+  useEffect(() => {
+    queryClient.removeQueries({
+      predicate: (query) => {
+        return !query.queryKey.some(key => 
+          String(key).includes('auth') || String(key).includes('settings')
+        ) && query.state.fetchStatus !== 'fetching';
+      },
+      type: 'inactive',
+    });
+  }, [location.pathname, queryClient]);
 
   return (
     <AuthProvider>
-      <LoadingProvider> 
-        <div className="min-h-screen body">
-          <Routes>
-            {routes.map((route, index) => (
-              <Route
-                key={index}
-                path={route.path}
-                element={route.element}
-              />
-            ))}
-          </Routes>
-        </div>
-      </LoadingProvider>
+      <div className="min-h-screen body">
+        <Routes>
+          {routes.map((route, index) => (
+            <Route
+              key={index}
+              path={route.path}
+              element={route.element}
+              loader={route.loader}
+            />
+          ))}
+        </Routes>
+      </div>
     </AuthProvider>
   );
 }

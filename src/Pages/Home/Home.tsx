@@ -1,325 +1,275 @@
-// src/Pages/Home.tsx
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { useAuth } from '../../Contexts/AuthContexts';
-import { useLoading } from '../../Contexts/LoadingContext';
-import AuthenticatedLayout from '../Layout';
-import PostCard from '../PostComponents/PostCard';
-import { collection, query, orderBy, onSnapshot, limit, startAfter, getDocs } from 'firebase/firestore';
+// src/Pages/Home/Home.tsx
+import { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { collection, getDocs, query, where, orderBy, limit, doc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../../Services/Firebase';
-import { Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../../Contexts/AuthContexts';
+import PostCard from '../../Pages/PostComponents/PostCard';
+import UserSuggestion from '../UsersComponents/UserSuggestion';
+import { SkeletonCard, SkeletonUser } from '../../Components/UI/Skeleton';
 
-interface UserData {
-  username: string;
-  uid: string;
-}
-
-interface Post {
-  id: string;
-  title: string;
-  content: string;
-  author: {
-    id: string;
-    name: string;
-  };
-  createdAt: any;
-  likes: string[];
-  savedBy?: string[];
-  reposts?: number;
-  comments?: any[];
-}
-
-const POSTS_PER_PAGE = 5;
-
-export default function HomePage() {
-  const [userData, setUserData] = useState<UserData | null>(null);
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [error, setError] = useState('');
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [lastVisible, setLastVisible] = useState<any>(null);
-  const [hasMore, setHasMore] = useState(true);
-  const { startLoading, stopLoading, resetLoading } = useLoading();
+const HomePage = () => {
+  const [activeFilter, setActiveFilter] = useState('latest');
   const { currentUser } = useAuth();
-  
-  // For intersection observer
-  const loaderRef = useRef<HTMLDivElement>(null);
-  
-  const fetchUserData = useCallback(async () => {
+  const queryClient = useQueryClient();
+
+  const fetchPosts = async () => {
+    let postsQuery;
+    
+    if (activeFilter === 'latest') {
+      postsQuery = query(
+        collection(db, 'posts'), 
+        orderBy('createdAt', 'desc'),
+        limit(20)
+      );
+    } else if (activeFilter === 'popular') {
+      postsQuery = query(
+        collection(db, 'posts'), 
+        orderBy('likes', 'desc'),
+        limit(20)
+      );
+    } else if (activeFilter === 'following' && currentUser) {
+      const followingQuery = query(
+        collection(db, 'following'), 
+        where('followerId', '==', currentUser.uid)
+      );
+      const followingSnapshot = await getDocs(followingQuery);
+      const followingIds = followingSnapshot.docs.map(doc => doc.data().followingId);
+      
+      if (followingIds.length === 0) return [];
+      
+      postsQuery = query(
+        collection(db, 'posts'), 
+        where('userId', 'in', followingIds),
+        orderBy('createdAt', 'desc'),
+        limit(20)
+      );
+    } else {
+      postsQuery = query(
+        collection(db, 'posts'), 
+        orderBy('createdAt', 'desc'),
+        limit(20)
+      );
+    }
+    
+    const querySnapshot = await getDocs(postsQuery);
+    const posts = [];
+    querySnapshot.forEach((doc) => {
+      posts.push({ id: doc.id, ...doc.data() });
+    });
+    
+    return posts;
+  };
+
+  const fetchSuggestions = async () => {
+    if (!currentUser) return [];
+    
+    const followingQuery = query(
+      collection(db, 'following'),
+      where('followerId', '==', currentUser.uid)
+    );
+    const followingSnapshot = await getDocs(followingQuery);
+    const followingIds = followingSnapshot.docs.map(doc => doc.data().followingId);
+    followingIds.push(currentUser.uid);
+    
+    const usersQuery = query(collection(db, 'users'), limit(10));
+    const usersSnapshot = await getDocs(usersQuery);
+    const users = [];
+    usersSnapshot.forEach((doc) => {
+      if (!followingIds.includes(doc.id)) {
+        users.push({ id: doc.id, ...doc.data() });
+      }
+    });
+    
+    return users.slice(0, 5);
+  };
+
+  const {
+    data: posts,
+    isLoading: postsLoading,
+    error: postsError,
+    refetch: refetchPosts,
+  } = useQuery({
+    queryKey: ['posts', activeFilter],
+    queryFn: fetchPosts,
+    staleTime: 2 * 60 * 1000,
+    enabled: !!currentUser,
+  });
+
+  const {
+    data: suggestions,
+    isLoading: suggestionsLoading,
+  } = useQuery({
+    queryKey: ['userSuggestions'],
+    queryFn: fetchSuggestions,
+    staleTime: 5 * 60 * 1000,
+    enabled: !!currentUser,
+  });
+
+  const handleFilterChange = (filter) => {
+    setActiveFilter(filter);
+  };
+
+  const handleLike = async (postId) => {
+    if (!currentUser) return;
+    
+    queryClient.setQueryData(['posts', activeFilter], (oldData) => {
+      if (!oldData) return [];
+      return oldData.map(post => 
+        post.id === postId ? { ...post, likes: post.likes + 1 } : post
+      );
+    });
+    
     try {
-      if (!currentUser) return;
-      
-      startLoading('Loading your data...');
-      
-      // Simulate API call - replace with your actual data fetching
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      setUserData({
-        username: currentUser.email?.split('@')[0] || 'User',
-        uid: currentUser.uid,
+      const postRef = doc(db, 'posts', postId);
+      await updateDoc(postRef, {
+        likes: increment(1)
       });
-    } catch (err) {
-      console.error("Error loading data:", err);
-      setError('Failed to load user data');
-      resetLoading();
-    } finally {
-      stopLoading();
+      
+      const likeRef = doc(db, 'user-likes', `${currentUser.uid}_${postId}`);
+      await updateDoc(likeRef, {
+        userId: currentUser.uid,
+        postId: postId,
+        createdAt: new Date()
+      });
+    } catch (error) {
+      console.error('Error liking post:', error);
+      refetchPosts();
     }
-  }, [currentUser, startLoading, stopLoading, resetLoading]);
+  };
 
-  const initializePosts = useCallback(async () => {
-    try {
-      startLoading('Loading posts...');
-      
-      const postsRef = collection(db, 'posts');
-      const q = query(
-        postsRef,
-        orderBy('createdAt', 'desc'),
-        limit(POSTS_PER_PAGE)
-      );
-      
-      const querySnapshot = await getDocs(q);
-      const postsData = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Post[];
-      
-      setPosts(postsData);
-      
-      // Get the last visible document
-      const lastDoc = querySnapshot.docs[querySnapshot.docs.length - 1];
-      setLastVisible(lastDoc);
-      setHasMore(querySnapshot.docs.length === POSTS_PER_PAGE);
-      
-    } catch (err) {
-      console.error("Error loading posts:", err);
-      setError('Failed to load posts');
-    } finally {
-      stopLoading();
-    }
-  }, [startLoading, stopLoading]);
-  
-  const loadMorePosts = useCallback(async () => {
-    if (!hasMore || loadingMore || !lastVisible) return;
+  const handleFollow = async (userId) => {
+    if (!currentUser) return;
     
     try {
-      setLoadingMore(true);
+      const followingRef = doc(db, 'following', `${currentUser.uid}_${userId}`);
+      await updateDoc(followingRef, {
+        followerId: currentUser.uid,
+        followingId: userId,
+        createdAt: new Date()
+      });
       
-      const postsRef = collection(db, 'posts');
-      const q = query(
-        postsRef,
-        orderBy('createdAt', 'desc'),
-        startAfter(lastVisible),
-        limit(POSTS_PER_PAGE)
-      );
-      
-      const querySnapshot = await getDocs(q);
-      const newPostsData = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Post[];
-      
-      setPosts(prevPosts => [...prevPosts, ...newPostsData]);
-      
-      // Update the last visible document
-      const lastDoc = querySnapshot.docs[querySnapshot.docs.length - 1];
-      setLastVisible(lastDoc);
-      setHasMore(querySnapshot.docs.length === POSTS_PER_PAGE);
-      
-    } catch (err) {
-      console.error("Error loading more posts:", err);
-    } finally {
-      setLoadingMore(false);
+      queryClient.invalidateQueries({ queryKey: ['userSuggestions'] });
+    } catch (error) {
+      console.error('Error following user:', error);
     }
-  }, [hasMore, lastVisible, loadingMore]);
-  
-  // Set up post updates listener - OPTIMIZED to reduce unnecessary fetches
-useEffect(() => {
-  let unsubscribe: () => void;
-  
-  const setupListener = async () => {
-    // First get the initial batch of posts
-    const initialQuery = query(
-      collection(db, 'posts'),
-      orderBy('createdAt', 'desc'),
-      limit(POSTS_PER_PAGE)
-    );
-    
-    const initialSnapshot = await getDocs(initialQuery);
-    const initialPosts = initialSnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as Post[];
-    
-    setPosts(initialPosts);
-    setLastVisible(initialSnapshot.docs[initialSnapshot.docs.length - 1]);
-    setHasMore(initialSnapshot.docs.length === POSTS_PER_PAGE);
-    
-    // Then set up the real-time listener for changes
-    unsubscribe = onSnapshot(
-      query(collection(db, 'posts'), orderBy('createdAt', 'desc')),
-      (snapshot) => {
-        snapshot.docChanges().forEach((change) => {
-          const changedPost = { id: change.doc.id, ...change.doc.data() } as Post;
-          
-          setPosts(prevPosts => {
-            // Handle modifications
-            if (change.type === 'modified') {
-              return prevPosts.map(post => 
-                post.id === change.doc.id ? changedPost : post
-              );
-            }
-            // Handle additions (only if not already in the list)
-            if (change.type === 'added') {
-              const exists = prevPosts.some(p => p.id === changedPost.id);
-              if (!exists) {
-                return [changedPost, ...prevPosts];
-              }
-            }
-            // Handle deletions
-            if (change.type === 'removed') {
-              return prevPosts.filter(post => post.id !== change.doc.id);
-            }
-            return prevPosts;
-          });
-        });
-      },
-      (error) => {
-        console.error("Error in posts listener:", error);
-      }
-    );
   };
-
-  setupListener();
-  
-  return () => {
-    if (unsubscribe) unsubscribe();
-  };
-}, []); // Remove dependency on posts to prevent re-creating the listener
-  
-  // Initialize intersection observer for infinite scrolling
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      entries => {
-        if (entries[0].isIntersecting && hasMore && !loadingMore) {
-          loadMorePosts();
-        }
-      },
-      { threshold: 0.5 }
-    );
-    
-    if (loaderRef.current) {
-      observer.observe(loaderRef.current);
-    }
-    
-    return () => {
-      if (loaderRef.current) {
-        observer.unobserve(loaderRef.current);
-      }
-    };
-  }, [hasMore, loadMorePosts, loadingMore]);
-  
-  useEffect(() => {
-    fetchUserData();
-    initializePosts();
-    
-    return () => {
-      resetLoading();
-    };
-  }, [fetchUserData, initializePosts, resetLoading]);
-
-  const handleLogout = () => {
-    // Your logout logic here
-    console.log('Logging out');
-  };
-
-  const handleRetry = () => {
-    setError('');
-    fetchUserData();
-    initializePosts();
-  };
-
-  const handleLikeUpdate = () => {
-    // No need to do anything as the listener will handle updates
-  };
-  
-  const handleDeletePost = (postId: string) => {
-    // The listener will handle the removal, but we can optimize by removing it immediately
-    setPosts(prevPosts => prevPosts.filter(post => post.id !== postId));
-  };
-
-  if (error) {
-    return (
-      <AuthenticatedLayout
-        topNavProps={{ username: 'Error', onLogout: handleLogout }}
-      >
-        <div className="p-4">
-          <div className="text-red-500">{error}</div>
-          <button 
-            onClick={handleRetry}
-            className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-          >
-            Retry
-          </button>
-        </div>
-      </AuthenticatedLayout>
-    );
-  }
 
   return (
-    <AuthenticatedLayout
-      topNavProps={{ 
-        username: userData?.username || 'Loading...', 
-        onLogout: handleLogout 
-      }}
-    >
-      <div className="p-4 max-w-2xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">
-            Welcome, {userData?.username || 'User'}!
-          </h1>
-          <Link 
-            to="/post/create" 
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+    <div className="max-w-6xl mx-auto p-4">
+      <div className="bg-white rounded-lg shadow p-4 mb-6">
+        <div className="flex space-x-4">
+          <button
+            onClick={() => handleFilterChange('latest')}
+            className={`px-4 py-2 rounded-full ${
+              activeFilter === 'latest' 
+                ? 'bg-blue-500 text-white' 
+                : 'bg-gray-100 hover:bg-gray-200'
+            }`}
           >
-            Create Post
-          </Link>
+            Latest
+          </button>
+          <button
+            onClick={() => handleFilterChange('popular')}
+            className={`px-4 py-2 rounded-full ${
+              activeFilter === 'popular' 
+                ? 'bg-blue-500 text-white' 
+                : 'bg-gray-100 hover:bg-gray-200'
+            }`}
+          >
+            Popular
+          </button>
+          <button
+            onClick={() => handleFilterChange('following')}
+            className={`px-4 py-2 rounded-full ${
+              activeFilter === 'following' 
+                ? 'bg-blue-500 text-white' 
+                : 'bg-gray-100 hover:bg-gray-200'
+            }`}
+          >
+            Following
+          </button>
         </div>
-        
-        <AnimatePresence>
-          <div className="space-y-4">
-            {posts.length > 0 ? (
-              posts.map(post => (
-                <PostCard 
-                  key={post.id} 
-                  post={post} 
-                  onLikeUpdate={handleLikeUpdate}
-                  onDeletePost={handleDeletePost}
-                  currentUser={currentUser}
+      </div>
+
+      <div className="flex flex-col lg:flex-row gap-6">
+        <div className="flex-grow">
+          {postsLoading ? (
+            Array(3).fill(null).map((_, i) => (
+              <SkeletonCard key={i} />
+            ))
+          ) : postsError ? (
+            <div className="bg-white rounded-lg shadow p-6 text-center">
+              <p className="text-red-500 mb-3">Error loading posts.</p>
+              <button 
+                onClick={() => refetchPosts()} 
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+              >
+                Try Again
+              </button>
+            </div>
+          ) : posts && posts.length > 0 ? (
+            posts.map(post => (
+              <PostCard 
+                key={post.id} 
+                post={post} 
+                onLike={() => handleLike(post.id)} 
+              />
+            ))
+          ) : (
+            <div className="bg-white rounded-lg shadow p-8 text-center">
+              <h3 className="text-xl font-medium mb-2">No posts found</h3>
+              <p className="text-gray-500 mb-4">
+                {activeFilter === 'following' 
+                  ? "Follow people to see their posts here" 
+                  : "There are no posts at the moment"}
+              </p>
+              {activeFilter === 'following' && (
+                <button 
+                  onClick={() => handleFilterChange('latest')}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                >
+                  Discover Posts
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="w-full lg:w-80">
+          <div className="bg-white rounded-lg shadow p-4 sticky top-4">
+            <h3 className="font-medium mb-4 text-lg">Who to follow</h3>
+            
+            {suggestionsLoading ? (
+              Array(3).fill(null).map((_, i) => (
+                <SkeletonUser key={i} />
+              ))
+            ) : suggestions && suggestions.length > 0 ? (
+              suggestions.map(user => (
+                <UserSuggestion 
+                  key={user.id} 
+                  user={user} 
+                  onFollow={() => handleFollow(user.id)} 
                 />
               ))
             ) : (
-              <div className="text-center py-8 text-gray-500">
-                No posts found. Be the first to create one!
-              </div>
+              <p className="text-gray-500 text-center py-4">
+                No suggestions available
+              </p>
             )}
             
-            {/* Loader for infinite scrolling */}
-            {hasMore && (
-              <div ref={loaderRef} className="py-4 text-center">
-                {loadingMore ? (
-                  <div className="flex justify-center items-center space-x-2">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                  </div>
-                ) : (
-                  <span className="text-gray-400">Scroll for more</span>
-                )}
+            {suggestions && suggestions.length > 0 && (
+              <div className="mt-4 text-center">
+                <button className="text-blue-500 hover:text-blue-700">
+                  See More
+                </button>
               </div>
             )}
           </div>
-        </AnimatePresence>
+        </div>
       </div>
-    </AuthenticatedLayout>
+    </div>
   );
-}
+};
+
+export default HomePage;
