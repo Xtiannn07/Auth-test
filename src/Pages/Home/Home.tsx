@@ -1,88 +1,16 @@
 // src/Pages/Home/Home.tsx
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { collection, getDocs, query, where, orderBy, limit, doc, updateDoc, increment } from 'firebase/firestore';
-import { db } from '../../Services/Firebase';
 import { useAuth } from '../../Contexts/AuthContexts';
 import PostCard from '../../Pages/PostComponents/PostCard';
 import UserSuggestion from '../UsersComponents/UserSuggestion';
 import { SkeletonCard, SkeletonUser } from '../../Components/UI/Skeleton';
+import { PostService } from '../../Services/PostService';
 
 const HomePage = () => {
   const [activeFilter, setActiveFilter] = useState('latest');
   const { currentUser } = useAuth();
   const queryClient = useQueryClient();
-
-  const fetchPosts = async () => {
-    let postsQuery;
-    
-    if (activeFilter === 'latest') {
-      postsQuery = query(
-        collection(db, 'posts'), 
-        orderBy('createdAt', 'desc'),
-        limit(20)
-      );
-    } else if (activeFilter === 'popular') {
-      postsQuery = query(
-        collection(db, 'posts'), 
-        orderBy('likes', 'desc'),
-        limit(20)
-      );
-    } else if (activeFilter === 'following' && currentUser) {
-      const followingQuery = query(
-        collection(db, 'following'), 
-        where('followerId', '==', currentUser.uid)
-      );
-      const followingSnapshot = await getDocs(followingQuery);
-      const followingIds = followingSnapshot.docs.map(doc => doc.data().followingId);
-      
-      if (followingIds.length === 0) return [];
-      
-      postsQuery = query(
-        collection(db, 'posts'), 
-        where('userId', 'in', followingIds),
-        orderBy('createdAt', 'desc'),
-        limit(20)
-      );
-    } else {
-      postsQuery = query(
-        collection(db, 'posts'), 
-        orderBy('createdAt', 'desc'),
-        limit(20)
-      );
-    }
-    
-    const querySnapshot = await getDocs(postsQuery);
-    const posts = [];
-    querySnapshot.forEach((doc) => {
-      posts.push({ id: doc.id, ...doc.data() });
-    });
-    
-    return posts;
-  };
-
-  const fetchSuggestions = async () => {
-    if (!currentUser) return [];
-    
-    const followingQuery = query(
-      collection(db, 'following'),
-      where('followerId', '==', currentUser.uid)
-    );
-    const followingSnapshot = await getDocs(followingQuery);
-    const followingIds = followingSnapshot.docs.map(doc => doc.data().followingId);
-    followingIds.push(currentUser.uid);
-    
-    const usersQuery = query(collection(db, 'users'), limit(10));
-    const usersSnapshot = await getDocs(usersQuery);
-    const users = [];
-    usersSnapshot.forEach((doc) => {
-      if (!followingIds.includes(doc.id)) {
-        users.push({ id: doc.id, ...doc.data() });
-      }
-    });
-    
-    return users.slice(0, 5);
-  };
 
   const {
     data: posts,
@@ -91,7 +19,7 @@ const HomePage = () => {
     refetch: refetchPosts,
   } = useQuery({
     queryKey: ['posts', activeFilter],
-    queryFn: fetchPosts,
+    queryFn: () => PostService.fetchPosts(activeFilter, currentUser?.uid),
     staleTime: 2 * 60 * 1000,
     enabled: !!currentUser,
   });
@@ -101,7 +29,7 @@ const HomePage = () => {
     isLoading: suggestionsLoading,
   } = useQuery({
     queryKey: ['userSuggestions'],
-    queryFn: fetchSuggestions,
+    queryFn: () => currentUser ? PostService.fetchUserSuggestions(currentUser.uid) : [],
     staleTime: 5 * 60 * 1000,
     enabled: !!currentUser,
   });
@@ -121,17 +49,7 @@ const HomePage = () => {
     });
     
     try {
-      const postRef = doc(db, 'posts', postId);
-      await updateDoc(postRef, {
-        likes: increment(1)
-      });
-      
-      const likeRef = doc(db, 'user-likes', `${currentUser.uid}_${postId}`);
-      await updateDoc(likeRef, {
-        userId: currentUser.uid,
-        postId: postId,
-        createdAt: new Date()
-      });
+      await PostService.likePost(postId, currentUser.uid);
     } catch (error) {
       console.error('Error liking post:', error);
       refetchPosts();
@@ -142,13 +60,7 @@ const HomePage = () => {
     if (!currentUser) return;
     
     try {
-      const followingRef = doc(db, 'following', `${currentUser.uid}_${userId}`);
-      await updateDoc(followingRef, {
-        followerId: currentUser.uid,
-        followingId: userId,
-        createdAt: new Date()
-      });
-      
+      await PostService.followUser(currentUser.uid, userId);
       queryClient.invalidateQueries({ queryKey: ['userSuggestions'] });
     } catch (error) {
       console.error('Error following user:', error);
@@ -157,6 +69,7 @@ const HomePage = () => {
 
   return (
     <div className="max-w-6xl mx-auto p-4">
+      {/* Filter buttons remain the same */}
       <div className="bg-white rounded-lg shadow p-4 mb-6">
         <div className="flex space-x-4">
           <button
@@ -209,11 +122,12 @@ const HomePage = () => {
               </button>
             </div>
           ) : posts && posts.length > 0 ? (
-            posts.map(post => (
+            posts.map((post, index) => (
               <PostCard 
                 key={post.id} 
                 post={post} 
-                onLike={() => handleLike(post.id)} 
+                onLike={() => handleLike(post.id)}
+                customAnimation={{ delay: index * 0.1 }}
               />
             ))
           ) : (
@@ -236,6 +150,7 @@ const HomePage = () => {
           )}
         </div>
 
+        {/* Right sidebar remains the same */}
         <div className="w-full lg:w-80">
           <div className="bg-white rounded-lg shadow p-4 sticky top-4">
             <h3 className="font-medium mb-4 text-lg">Who to follow</h3>

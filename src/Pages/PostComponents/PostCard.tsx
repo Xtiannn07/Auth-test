@@ -20,20 +20,24 @@ interface PostCardProps {
     reposts?: number;
     comments?: any[];
   };
-  onLikeUpdate?: () => void;
+  onLike?: () => void;
   onDeletePost?: (postId: string) => void;
   showFullContent?: boolean;
   maxContentLength?: number;
   currentUser?: any;
+  customAnimation?: {
+    delay?: number;
+  };
 }
 
 export default function PostCard({
   post,
-  onLikeUpdate,
+  onLike,
   onDeletePost,
   showFullContent = false,
   maxContentLength = 200,
-  currentUser
+  currentUser,
+  customAnimation
 }: PostCardProps) {
   const [showDeleteMenu, setShowDeleteMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -54,7 +58,7 @@ export default function PostCard({
   } = usePostActions({ 
     post, 
     currentUser, 
-    onLikeUpdate, 
+    onLike, 
     onDeletePost 
   });
   
@@ -93,7 +97,7 @@ export default function PostCard({
         animate={{ opacity: 0, height: 0 }}
         exit={{ opacity: 0, height: 0 }}
         transition={{ duration: 0.5 }}
-        className="overflow-hidden"
+        className="overflow-hidden mb-4"
       >
         <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
           <p className="text-center text-gray-500">Deleting post...</p>
@@ -106,8 +110,8 @@ export default function PostCard({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      className="bg-white rounded-lg shadow p-4 border border-gray-200"
+      transition={{ duration: 0.3, delay: customAnimation?.delay || 0 }}
+      className="bg-white rounded-lg shadow p-4 border border-gray-200 mb-4"
     >
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-4 text-sm">
@@ -213,6 +217,6 @@ export default function PostCard({
 // Define default props
 PostCard.defaultProps = {
   showFullContent: false, 
-  maxContentLength: 200
+  maxContentLength: 200,
+  customAnimation: {}
 };
-

@@ -1,3 +1,4 @@
+//src/Pages/Post/Post.tsx
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../../Services/Firebase';
@@ -28,11 +29,13 @@ export default function PostPage({
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!currentUser) {
+    if (shouldRedirect) {
+      navigate('/home', { replace: true });
+    } else if (!currentUser) {
       navigate('/signin');
-      return;
     }
-  }, [currentUser, navigate]);
+  }, [currentUser, navigate, shouldRedirect]);
+  
 
   useEffect(() => {
     if (shouldRedirect) {
@@ -91,7 +94,8 @@ export default function PostPage({
     } finally {
       setIsSubmitting(false);
     }
-  };
+};
+
 
   const contentLength = content.length;
   const contentLengthColor = contentLength > maxContentLength ? 'text-red-500' :
