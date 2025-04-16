@@ -5,7 +5,7 @@ import { useAuth } from '../../Contexts/AuthContexts';
 import PostCard from '../../Pages/PostComponents/PostCard';
 import UserSuggestion from '../UsersComponents/UserSuggestion';
 import { SkeletonCard, SkeletonUser } from '../../Components/UI/Skeleton';
-import { PostService } from '../../Services/PostService';
+import { PostService } from '../../Services/HomePagePostService';
 
 const HomePage = () => {
   const [activeFilter, setActiveFilter] = useState('latest');
