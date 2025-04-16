@@ -1,24 +1,27 @@
 // src/Pages/Search/api.ts
-import { getAuth, listUsers, UserRecord } from 'firebase/auth';
-import { doc, setDoc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from './Firebase';
+import { collection, getDocs, query, where, orderBy, limit, doc, setDoc, getDoc } from 'firebase/firestore';
+import { db, auth } from './Firebase';
+import { User as FirebaseUser } from 'firebase/auth';
 
 export interface User {
   id: string;
-  username: string;
+  username?: string;
   displayName?: string;
   email?: string;
   photoURL?: string;
 }
 
-// Custom admin-only function to fetch users from Firebase Authentication
-// Note: Firebase Authentication listUsers requires admin SDK and can't be used in client apps directly
-// Instead, we'll assume you have a users collection in Firestore that mirrors your auth users
+// Since we can't list users from Firebase Auth directly in client code,
+// we need to maintain a separate users collection in Firestore
 export const fetchUsers = async (limitCount = 10): Promise<User[]> => {
   try {
-    const usersQuery = query(collection(db, 'users'), limit(limitCount));
-    const querySnapshot = await getDocs(usersQuery);
+    const usersQuery = query(
+      collection(db, 'users'),
+      orderBy('createdAt', 'desc'), // Assuming users have a createdAt field
+      limit(limitCount)
+    );
     
+    const querySnapshot = await getDocs(usersQuery);
     return querySnapshot.docs.map(doc => ({ 
       id: doc.id, 
       ...doc.data() 
@@ -36,11 +39,14 @@ export const searchUsers = async (searchTerm: string): Promise<User[]> => {
   }
 
   try {
-    // Get all users and filter client-side
-    // Note: In a production app, you might want a proper search index
-    const usersQuery = query(collection(db, 'users'));
-    const querySnapshot = await getDocs(usersQuery);
+    // Unfortunately, Firestore doesn't support native case-insensitive search
+    // We'll get all users (up to a reasonable limit) and filter client-side
+    const usersQuery = query(
+      collection(db, 'users'),
+      limit(100) // Limit to avoid too much data transfer
+    );
     
+    const querySnapshot = await getDocs(usersQuery);
     const searchTermLower = searchTerm.toLowerCase();
     
     return querySnapshot.docs
@@ -102,5 +108,31 @@ export const getHiddenSuggestions = async (currentUserId: string): Promise<strin
   return querySnapshot.docs.map(doc => doc.data().userId);
 };
 
-// Import necessary functions
-import { limit } from 'firebase/firestore';
+// Utility function to get user display information
+export const getUserDisplayInfo = (user: FirebaseUser | User | null): {
+  displayName: string;
+  username: string;
+  initial: string;
+} => {
+  if (!user) {
+    return {
+      displayName: 'User',
+      username: 'user',
+      initial: 'U'
+    };
+  }
+
+  // Use displayName or email username part as fallback
+  const displayName = user.displayName || 
+    (user.email ? user.email.split('@')[0] : 'User');
+  
+  // Use email username as username if no dedicated username field
+  const username = 'username' in user && user.username ? 
+    user.username : 
+    user.email ? user.email.split('@')[0] : 'user';
+
+  // Get initial for avatar
+  const initial = displayName.charAt(0).toUpperCase();
+
+  return { displayName, username, initial };
+};

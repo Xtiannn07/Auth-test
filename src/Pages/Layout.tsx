@@ -13,8 +13,8 @@ export default function AuthenticatedLayout({ children }: { children: React.Reac
   }
 
   return (
-    <div className="flex flex-col h-screen bg-white">
-      <header className="sticky top-0 z-50 bg-white shadow-sm">
+    <div className="flex flex-col h-screen">
+      <header className="sticky top-0 z-50 bg-white shadow-xs">
         <TopNavigation username={currentUser.email.split('@')[0]} />
       </header>
       <main className="flex-1 overflow-y-auto">{children}</main>

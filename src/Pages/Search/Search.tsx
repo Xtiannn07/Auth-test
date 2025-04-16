@@ -1,17 +1,16 @@
 // src/Pages/Search/Search.tsx
 import { useEffect, useState, useCallback } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../Contexts/AuthContexts';
 import SearchHeader from './SearchHeader';
-import UsersCard from './../SearchComponents/UserCard';
+import UsersCard from './../SearchComponents/UserCard'
 import { SkeletonUser } from '../../Components/UI/Skeleton';
-import { fetchUsers, searchUsers, getHiddenSuggestions, User } from './../../Services/SearchPageService';
+import { fetchUsers, searchUsers, getHiddenSuggestions, User } from '../../Services/SearchPageService';
 
-const SearchPage: React.FC = () => {
+const SearchPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [displayedUsers, setDisplayedUsers] = useState<User[]>([]);
   const { currentUser } = useAuth();
-  const queryClient = useQueryClient();
 
   // Get hidden suggestions first to filter them out
   const { data: hiddenUserIds } = useQuery({
@@ -47,13 +46,21 @@ const SearchPage: React.FC = () => {
     enabled: !!currentUser && searchTerm.length > 0,
   });
 
-  // Filter out hidden users
+  // Filter out hidden users and current user
   useEffect(() => {
     const filterUsers = (users: User[] | undefined) => {
       if (!users) return [];
-      if (!hiddenUserIds || hiddenUserIds.length === 0) return users;
+      if (!currentUser) return users;
       
-      return users.filter(user => !hiddenUserIds.includes(user.id));
+      return users.filter(user => {
+        // Filter out current user
+        if (user.id === currentUser.uid) return false;
+        
+        // Filter out hidden users
+        if (hiddenUserIds && hiddenUserIds.includes(user.id)) return false;
+        
+        return true;
+      });
     };
     
     if (searchTerm.length > 0 && searchResults) {
@@ -61,19 +68,15 @@ const SearchPage: React.FC = () => {
     } else if (suggestedUsers) {
       setDisplayedUsers(filterUsers(suggestedUsers));
     }
-  }, [searchTerm, searchResults, suggestedUsers, hiddenUserIds]);
+  }, [searchTerm, searchResults, suggestedUsers, hiddenUserIds, currentUser]);
 
   // Page visibility change handler
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        if (searchTerm.length > 0) {
-          refetchSearch();
-        } else {
-          refetchSuggested();
-        }
-        // Clear search when page becomes visible again
+        // Clear search and refresh data when page becomes visible again
         setSearchTerm('');
+        refetchSuggested();
       }
     };
     
@@ -81,7 +84,7 @@ const SearchPage: React.FC = () => {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [refetchSearch, refetchSuggested, searchTerm.length]);
+  }, [refetchSuggested]);
 
   // Handle removing a user card
   const handleRemoveUser = useCallback((userId: string) => {
