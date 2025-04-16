@@ -1,8 +1,9 @@
-//src/Components/Navigation/TopNavigation.tsx
 import { ArrowLeft, MoreHorizontal, LogOut } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../Contexts/AuthContexts';
+import { useDispatch } from 'react-redux';
+import { signOutUser } from '../../store/authSlice';
+import { RootState } from '../../store/store';
 
 interface TopNavigationProps {
   username: string;
@@ -13,7 +14,7 @@ export default function TopNavigation({ username, onLogout }: TopNavigationProps
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const dispatch = useDispatch();
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -29,8 +30,8 @@ export default function TopNavigation({ username, onLogout }: TopNavigationProps
 
   const handleLogout = async () => {
     try {
-      // Use the logout function from AuthContext that dispatches Redux action
-      await logout();
+      // Dispatch the signOutUser action from authSlice
+      await dispatch(signOutUser());
       // Use the parent component's onLogout if provided
       if (onLogout) {
         onLogout();

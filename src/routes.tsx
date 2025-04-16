@@ -1,8 +1,10 @@
 // src/routes.tsx
 import { lazy, Suspense, ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuth } from './Contexts/AuthContexts';
+import { useSelector } from 'react-redux';
+import { RootState } from './store/store';
 import AuthenticatedLayout from './Pages/Layout';
+import PrivateRoute from './Components/Auth/PrivateRoute';
 
 const SignIn = lazy(() => import('./Components/Auth/SignIn'));
 const SignUp = lazy(() => import('./Components/Auth/SignUp'));
@@ -12,14 +14,6 @@ const SearchPage = lazy(() => import('./Pages/Search/Search'));
 const PostPage = lazy(() => import('./Pages/Post/Post'));
 const ProfilePage = lazy(() => import('./Pages/Profile/Profile'));
 
-interface PrivateRouteProps {
-  children: ReactNode;
-}
-
-function PrivateRoute({ children }: PrivateRouteProps) {
-  const { currentUser } = useAuth();
-  return currentUser ? children : <Navigate to="/signin" />;
-}
 
 const LazyRoute = ({ component: Component }: { component: React.ComponentType }) => (
   <Suspense fallback={<div>Loading...</div>}>
@@ -28,15 +22,8 @@ const LazyRoute = ({ component: Component }: { component: React.ComponentType })
 );
 
 const AuthenticatedRouteWrapper = ({ children }: { children: ReactNode }) => {
-  const { currentUser, logout } = useAuth();
-
   return (
-    <AuthenticatedLayout 
-      topNavProps={{
-        username: currentUser?.displayName || currentUser?.email?.split('@')[0] || 'User',
-        onLogout: logout
-      }}
-    >
+    <AuthenticatedLayout>
       {children}
     </AuthenticatedLayout>
   );

@@ -1,164 +1,166 @@
-// src/Pages/Profile/Profile.tsx - FIXED VERSION
-import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '../../Contexts/AuthContexts';
-import { useLoading } from '../../Contexts/LoadingContext';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../../Services/Firebase';
-import AuthenticatedLayout from '../Layout';
-import ProfileHeader from './Header';
-import ProfileContent from './ProfileContent';
-import ErrorScreen from '../../Components/UI/ErrorScreen';
-import SuccessToast from '../../Components/UI/SuccessToast';
-
-interface UserData {
-  uid: string;
-  displayName: string;
-  username: string;
-  email: string;
-  bio: string;
-  website: string;
-  followerCount: number;
-  followingCount: number;
-  postCount: number;
-  profilePicture: string;
-  coverPhoto: string | null;
-}
+import { useState, useEffect } from 'react';
+import { useParams, Navigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '../../store/store';
+import { useProfile } from '../../Contexts/ProfileContext';
+import { UserService, UserProfile } from '../../Services/UserService';
+import ProfileHeader from './ProfileHeader';
+import ProfileEditModal from './ProfileComponents/ProfileEditModal';
+import { Loader } from 'lucide-react';
 
 export default function ProfilePage() {
-  const [success, setSuccess] = useState('');
-  const [error, setError] = useState('');
-  const [userData, setUserData] = useState<UserData | null>(null);
-  const { startLoading, stopLoading, resetLoading } = useLoading();
-  const { currentUser } = useAuth();
+  const { username } = useParams<{ username: string }>();
+  const currentUser = useSelector((state: RootState) => state.auth.currentUser);
+  const { userProfile: myProfile } = useProfile();
+  
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isCurrentUser, setIsCurrentUser] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
 
-  // Wrap fetchUserData with useCallback to avoid recreating it on each render
-  const fetchUserData = useCallback(async () => {
-    if (!currentUser) {
-      return;
-    }
+  // Fetch the profile based on username
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!username) return;
+      
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Try to get user by username
+        const userProfile = await UserService.getUserByUsername(username);
+        
+        if (!userProfile) {
+          setError('User not found');
+          return;
+        }
+        
+        setProfile(userProfile);
+        
+        // Check if this is the current user's profile
+        if (currentUser && userProfile.uid === currentUser.uid) {
+          setIsCurrentUser(true);
+        } else {
+          setIsCurrentUser(false);
+          
+          // Check if current user is following this profile
+          if (currentUser) {
+            const following = await UserService.isFollowing(
+              currentUser.uid, 
+              userProfile.uid
+            );
+            setIsFollowing(following);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching profile:', err);
+        setError('Failed to load profile');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, [username, currentUser]);
+
+  // Handle follow/unfollow
+  const handleFollowUser = async () => {
+    if (!currentUser || !profile) return;
     
     try {
-      startLoading('Loading your profile...');
-      
-      // Minimum 500ms loading time to prevent flickering
-      const [_, userDoc] = await Promise.all([
-        new Promise(resolve => setTimeout(resolve, 500)),
-        getDoc(doc(db, 'users', currentUser.uid))
-      ]);
-      
-      if (userDoc.exists()) {
-        setUserData({
-          uid: currentUser.uid,
-          displayName: currentUser.displayName || userDoc.data().displayName || currentUser.email.split('@')[0],
-          username: userDoc.data().username || currentUser.email.split('@')[0],
-          email: currentUser.email,
-          bio: userDoc.data().bio || '',
-          website: userDoc.data().website || '',
-          followerCount: userDoc.data().followerCount || 0,
-          followingCount: userDoc.data().followingCount || 0,
-          postCount: userDoc.data().postCount || 0,
-          profilePicture: currentUser.photoURL || userDoc.data().profilePicture || './user.svg',
-          coverPhoto: userDoc.data().coverPhoto || null
-        });
-      } else {
-        setUserData({
-          uid: currentUser.uid,
-          displayName: currentUser.displayName || currentUser.email.split('@')[0],
-          username: currentUser.email.split('@')[0],
-          email: currentUser.email,
-          bio: '',
-          website: '',
-          followerCount: 0,
-          followingCount: 0,
-          postCount: 0,
-          profilePicture: currentUser.photoURL || './user.svg',
-          coverPhoto: null
-        });
-      }
+      await UserService.followUser(currentUser.uid, profile.uid);
+      setIsFollowing(true);
     } catch (err) {
-      console.error("Error loading profile:", err);
-      setError('Failed to load profile data. Please try again.');
-      // Make sure to reset loading state on error
-      resetLoading();
-    } finally {
-      stopLoading(); // This ensures stopLoading is always called
+      console.error('Error following user:', err);
     }
-  }, [currentUser, startLoading, stopLoading, resetLoading]);
-
-  useEffect(() => {
-    fetchUserData();
-    
-    // Cleanup function to ensure loading state is reset when component unmounts
-    return () => {
-      resetLoading();
-    };
-  }, [fetchUserData, resetLoading]);
-
-  const handleLogout = () => {
-    // Implement your logout logic here
-    console.log('User logged out');
   };
 
-  const handleSuccess = (message: string) => {
-    setSuccess(message);
-    setTimeout(() => setSuccess(''), 3000);
+  // Update profile after edit
+  const handleProfileUpdate = (updatedProfile: UserProfile) => {
+    setProfile(updatedProfile);
+    setIsEditModalOpen(false);
   };
 
-  const handleError = (message: string) => {
-    setError(message);
-  };
+  // If no username parameter, redirect to current user's profile
+  if (!username && myProfile) {
+    return <Navigate to={`/profile/${myProfile.username}`} />;
+  }
 
-  const handleRetry = () => {
-    setError('');
-    fetchUserData();
-  };
-
-  if (error) {
+  // Loading state
+  if (loading) {
     return (
-      <AuthenticatedLayout
-        topNavProps={{ 
-          username: userData?.username || 'Error', 
-          onLogout: handleLogout 
-        }}
-      >
-        <div className="p-4">
-          <ErrorScreen 
-            message={error} 
-            onRetry={handleRetry} 
-          />
+      <div className="flex justify-center items-center h-64">
+        <Loader className="w-8 h-8 text-blue-500 animate-spin" />
+      </div>
+    );
+  }
+
+  // Error state
+  if (error || !profile) {
+    return (
+      <div className="max-w-2xl mx-auto p-4">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+          <p className="text-red-500">{error || 'Profile not found'}</p>
         </div>
-      </AuthenticatedLayout>
+      </div>
     );
   }
 
   return (
-    <AuthenticatedLayout
-      topNavProps={{ 
-        username: userData?.username || 'Profile', 
-        onLogout: handleLogout 
-      }}
-    >
-      <div className="pb-16"> {/* Padding for bottom navigation */}
-        {success && <SuccessToast message={success} onDismiss={() => setSuccess('')} />}
-        
-        {userData && (
-          <>
-            <ProfileHeader 
-              currentUser={currentUser}
-              userData={userData}
-              onLogout={handleLogout}
-              onSuccess={handleSuccess}
-              onError={handleError}
-            />
-            
-            <ProfileContent 
-              userData={userData} 
-              onUpdateSuccess={handleSuccess}
-              onUpdateError={handleError}
-            />
-          </>
+    <div className="max-w-2xl mx-auto pb-8">
+      <ProfileHeader 
+        profile={profile}
+        isCurrentUser={isCurrentUser}
+        isFollowing={isFollowing}
+        onEditProfile={() => setIsEditModalOpen(true)}
+        onFollowUser={handleFollowUser}
+      />
+      
+      {/* Profile content */}
+      <div className="p-4">
+        {/* Bio */}
+        {profile.bio && (
+          <div className="mb-6">
+            <h3 className="font-medium text-gray-800 mb-2">Bio</h3>
+            <p className="text-gray-600">{profile.bio}</p>
+          </div>
         )}
+        
+        {/* Statistics */}
+        <div className="flex justify-around bg-white rounded-lg shadow-sm p-4 mb-6">
+          <div className="text-center">
+            <p className="font-bold text-lg">{profile.followerCount || 0}</p>
+            <p className="text-gray-500 text-sm">Followers</p>
+          </div>
+          <div className="text-center">
+            <p className="font-bold text-lg">{profile.followingCount || 0}</p>
+            <p className="text-gray-500 text-sm">Following</p>
+          </div>
+          <div className="text-center">
+            <p className="font-bold text-lg">0</p>
+            <p className="text-gray-500 text-sm">Posts</p>
+          </div>
+        </div>
+        
+        {/* Posts section - this would be populated with the user's posts */}
+        <div className="mt-6">
+          <h3 className="font-medium text-gray-800 mb-2">Posts</h3>
+          <div className="bg-white rounded-lg shadow-sm p-8 text-center">
+            <p className="text-gray-500">No posts yet</p>
+          </div>
+        </div>
       </div>
-    </AuthenticatedLayout>
+      
+      {/* Edit Profile Modal */}
+      {isEditModalOpen && (
+        <ProfileEditModal
+          profile={profile}
+          onClose={() => setIsEditModalOpen(false)}
+          onSave={handleProfileUpdate}
+        />
+      )}
+    </div>
   );
 }

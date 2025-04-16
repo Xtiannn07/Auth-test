@@ -1,9 +1,9 @@
-// src/Pages/Search/UsersActionButtons.tsx
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { UserMinus, UserPlus, X } from 'lucide-react';
 import { followUser, removeUserSuggestion } from './../../Services/SearchPageService';
-import { useAuth } from '../../Contexts/AuthContexts';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '../../store/store';
 
 interface UsersActionButtonsProps {
   userId: string;
@@ -23,7 +23,7 @@ const UsersActionButtons: React.FC<UsersActionButtonsProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isSliding, setIsSliding] = useState(false);
   const [currentIsFollowing, setCurrentIsFollowing] = useState(isFollowing);
-  const { currentUser } = useAuth();
+  const currentUser = useSelector((state: RootState) => state.auth.currentUser);
   const queryClient = useQueryClient();
 
   const handleFollow = async () => {
@@ -81,15 +81,12 @@ const UsersActionButtons: React.FC<UsersActionButtonsProps> = ({
       <button
         onClick={handleFollow}
         disabled={isLoading || isCheckingStatus || currentIsFollowing}
-        className={`
-          px-3 py-1 rounded-full text-sm font-medium flex items-center
+        className={`px-3 py-1 rounded-full text-sm font-medium flex items-center
           ${currentIsFollowing 
             ? 'border border-gray-300 text-gray-700' 
-            : 'bg-blue-500 text-white hover:bg-blue-600'
-          }
+            : 'bg-blue-500 text-white hover:bg-blue-600'}
           ${(isLoading || isCheckingStatus) ? 'opacity-75' : ''}
-          transition-all duration-200
-        `}
+          transition-all duration-200`}
         aria-label={currentIsFollowing ? "Following" : "Follow"}
       >
         {!currentIsFollowing && <UserPlus size={16} className="mr-1" />}

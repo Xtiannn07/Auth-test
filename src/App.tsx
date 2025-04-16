@@ -2,7 +2,9 @@
 import { useEffect, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { AuthProvider } from './Contexts/AuthContexts';
+import { Provider } from 'react-redux';
+import store from './store/store';
+import AuthStateListener from './Components/Auth/AuthStateListener';
 import routes from './routes';
 
 function AppContent() {
@@ -35,19 +37,21 @@ function AppContent() {
   }, [location.pathname, queryClient]);
 
   return (
-    <AuthProvider>
-      <div className="min-h-screen body">
-        <Routes>
-          {routes.map((route, index) => (
-            <Route
-              key={index}
-              path={route.path}
-              element={route.element}
-            />
-          ))}
-        </Routes>
-      </div>
-    </AuthProvider>
+    <Provider store={store}>
+      <AuthStateListener>
+        <div className="min-h-screen body">
+          <Routes>
+            {routes.map((route, index) => (
+              <Route
+                key={index}
+                path={route.path}
+                element={route.element}
+              />
+            ))}
+          </Routes>
+        </div>
+      </AuthStateListener>
+    </Provider>
   );
 }
 

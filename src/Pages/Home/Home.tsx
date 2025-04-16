@@ -1,7 +1,7 @@
-// src/Pages/Home/Home.tsx
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '../../Contexts/AuthContexts';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '../../store/store';
 import PostCard from '../../Pages/PostComponents/PostCard';
 import UserSuggestion from '../UsersComponents/UserSuggestion';
 import { SkeletonCard, SkeletonUser } from '../../Components/UI/Skeleton';
@@ -9,7 +9,7 @@ import { PostService } from '../../Services/HomePagePostService';
 
 const HomePage = () => {
   const [activeFilter, setActiveFilter] = useState('latest');
-  const { currentUser } = useAuth();
+  const currentUser = useSelector((state: RootState) => state.auth.currentUser);
   const queryClient = useQueryClient();
 
   const {

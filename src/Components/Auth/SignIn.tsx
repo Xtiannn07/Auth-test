@@ -1,24 +1,41 @@
 import { useState, useEffect, FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../Contexts/AuthContexts';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { signInUser, clearAuthError } from '../../store/authSlice';
+import { RootState, AppDispatch } from '../../store/store';
 import Input from '../UI/Input';
 import Button from '../UI/Button';
 import SignInFooter from './Footer';
 
+
 export default function SignIn() {
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
-  const { login, error, loading } = useAuth();
+  const dispatch = useDispatch<AppDispatch>();
+  const { error, loading } = useSelector((state: RootState) => state.auth);
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Get the intended destination if redirected to login
+  const from = location.state?.from?.pathname || '/home';
+  
+  // Clear errors when component mounts or inputs change
+  useEffect(() => {
+    dispatch(clearAuthError());
+  }, [email, password, dispatch]);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     
     try {
-      await login(email, password);
-      navigate('/home');
+      console.log('Attempting to login with:', email);
+      const resultAction = await dispatch(signInUser({ email, password }));
+      
+      if (signInUser.fulfilled.match(resultAction)) {
+        console.log('Login successful, navigating to home');
+        navigate(from, { replace: true });
+      }
     } catch (err) {
-      // Error handling is done in the auth context/redux
       console.error('Login failed:', err);
     }
   }
@@ -53,6 +70,7 @@ export default function SignIn() {
             className="h-14 w-14"
           />
         </div>
+
         
         {/* Form container */}
         <div className="w-full">
@@ -92,7 +110,7 @@ export default function SignIn() {
             <div className='w-full max-w-md flex p-[1px] rounded-3xl bg-white'>
               <Button
                 type="submit"
-                onClick={() => console.log('Button clicked')}
+                onClick={() => {}} // Satisfy the onClick requirement for TypeScript
                 disabled={loading}
                 className="w-full text-white rounded-3xl border-1 border-white"
               >

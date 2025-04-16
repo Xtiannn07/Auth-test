@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../Contexts/AuthContexts';
+import { useDispatch } from 'react-redux';
+import { resetUserPassword } from '../../store/authSlice';
 import Input from '../UI/Input';
 import Button from '../UI/Button';
 import SignInFooter from './Footer';
@@ -10,7 +11,7 @@ export default function ForgotPassword() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
-  const { resetPassword } = useAuth(); // Assuming your AuthContext has resetPassword
+  const dispatch = useDispatch();
   const navigate = useNavigate();
 
   async function handleSubmit(e) {
@@ -21,14 +22,14 @@ export default function ForgotPassword() {
       setMessage('');
       setLoading(true);
       
-      // Firebase sends a password reset email
-      await resetPassword(email);
+      // Dispatch the resetUserPassword action
+      await dispatch(resetUserPassword(email)).unwrap();
       setMessage('Check your inbox for further instructions.');
       
       // Optional: Redirect after a delay
       setTimeout(() => navigate('/signin'), 3000);
     } catch (error) {
-      setError('Failed to reset password: ' + error.message);
+      setError('Failed to reset password: ' + error);
     } finally {
       setLoading(false);
     }

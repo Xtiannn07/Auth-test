@@ -1,10 +1,10 @@
-//src/Pages/Post/Post.tsx
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../../Services/Firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import SuccessToast from '../../Components/UI/SuccessToast';
-import { useAuth } from '../../Contexts/AuthContexts';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '../../store/store';
 
 interface PostPageProps {
   maxContentLength?: number;
@@ -25,7 +25,7 @@ export default function PostPage({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [shouldRedirect, setShouldRedirect] = useState(false);
-  const { currentUser } = useAuth();
+  const currentUser = useSelector((state: RootState) => state.auth.currentUser);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -94,8 +94,7 @@ export default function PostPage({
     } finally {
       setIsSubmitting(false);
     }
-};
-
+  };
 
   const contentLength = content.length;
   const contentLengthColor = contentLength > maxContentLength ? 'text-red-500' :

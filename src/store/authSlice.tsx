@@ -5,7 +5,8 @@ import {
   signOut,
   updateProfile,
   sendPasswordResetEmail,
-  User
+  User,
+  UserCredential
 } from 'firebase/auth';
 import { auth } from '../Services/Firebase';
 
@@ -26,23 +27,52 @@ const initialState: AuthState = {
   error: null,
 };
 
+// Helper function to handle Firebase auth errors
+const handleAuthError = (error: any) => {
+  console.error('Firebase auth error:', error);
+  
+  // Translate Firebase error codes to user-friendly messages
+  if (error.code === 'auth/email-already-in-use') {
+    return 'This email is already in use. Try signing in or use a different email.';
+  } else if (error.code === 'auth/invalid-email') {
+    return 'Please enter a valid email address.';
+  } else if (error.code === 'auth/weak-password') {
+    return 'Password should be at least 6 characters.';
+  } else if (error.code === 'auth/wrong-password') {
+    return 'Incorrect password. Please try again.';
+  } else if (error.code === 'auth/user-not-found') {
+    return 'No account found with this email. Please sign up.';
+  } else if (error.code === 'auth/too-many-requests') {
+    return 'Too many failed attempts. Please try again later.';
+  } else {
+    return error.message || 'An error occurred during authentication.';
+  }
+};
+
+// Extract user data from Firebase User object
+const extractUserData = (user: User) => ({
+  uid: user.uid,
+  email: user.email,
+  displayName: user.displayName,
+  photoURL: user.photoURL,
+});
+
 // Async thunks for Firebase auth operations
 export const signUpUser = createAsyncThunk(
   'auth/signUp',
   async ({ email, password, displayName }: { email: string, password: string, displayName?: string }, { rejectWithValue }) => {
     try {
+      console.log('Creating user with Firebase');
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      
       if (displayName && userCredential.user) {
         await updateProfile(userCredential.user, { displayName });
       }
-      return {
-        uid: userCredential.user.uid,
-        email: userCredential.user.email,
-        displayName: userCredential.user.displayName,
-        photoURL: userCredential.user.photoURL,
-      };
+      
+      console.log('User created successfully');
+      return extractUserData(userCredential.user);
     } catch (error: any) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(handleAuthError(error));
     }
   }
 );
@@ -51,15 +81,12 @@ export const signInUser = createAsyncThunk(
   'auth/signIn',
   async ({ email, password }: { email: string, password: string }, { rejectWithValue }) => {
     try {
+      console.log('Attempting login with Firebase');
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      return {
-        uid: userCredential.user.uid,
-        email: userCredential.user.email,
-        displayName: userCredential.user.displayName,
-        photoURL: userCredential.user.photoURL,
-      };
+      console.log('Login successful');
+      return extractUserData(userCredential.user);
     } catch (error: any) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(handleAuthError(error));
     }
   }
 );
@@ -68,12 +95,12 @@ export const signOutUser = createAsyncThunk(
   'auth/signOut',
   async (_, { rejectWithValue }) => {
     try {
+      console.log('Signing out user');
       await signOut(auth);
-      // Set a timestamp for logout
-      localStorage.setItem('logoutTimestamp', Date.now().toString());
+      console.log('User logged out');
       return null;
     } catch (error: any) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(handleAuthError(error));
     }
   }
 );
@@ -82,10 +109,12 @@ export const resetUserPassword = createAsyncThunk(
   'auth/resetPassword',
   async (email: string, { rejectWithValue }) => {
     try {
+      console.log('Sending password reset email');
       await sendPasswordResetEmail(auth, email);
+      console.log('Password reset email sent');
       return null;
     } catch (error: any) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(handleAuthError(error));
     }
   }
 );
@@ -103,7 +132,7 @@ export const updateUserProfile = createAsyncThunk(
         photoURL,
       };
     } catch (error: any) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(handleAuthError(error));
     }
   }
 );

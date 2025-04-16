@@ -1,7 +1,7 @@
-// src/Pages/Search/UsersCard.tsx
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../../Contexts/AuthContexts';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '../../store/store';
 import UsersActionButtons from './UsersActionButtons';
 import { User, isUserFollowed } from './../../Services/SearchPageService';
 
@@ -14,7 +14,7 @@ const UsersCard: React.FC<UsersCardProps> = ({ user, onCardRemove }) => {
   const [isRemoving, setIsRemoving] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const { currentUser } = useAuth();
+  const currentUser = useSelector((state: RootState) => state.auth.currentUser);
   
   useEffect(() => {
     const checkFollowStatus = async () => {
@@ -59,8 +59,7 @@ const UsersCard: React.FC<UsersCardProps> = ({ user, onCardRemove }) => {
 
   return (
     <div 
-      className={`
-        bg-white rounded-lg shadow-sm p-4 mb-3 flex items-center justify-between
+      className={`bg-white rounded-lg shadow-sm p-4 mb-3 flex items-center justify-between
         ${isRemoving ? 'transform translate-x-full opacity-0' : ''}
         transition-all duration-300
       `}

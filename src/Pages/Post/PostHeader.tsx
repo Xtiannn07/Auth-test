@@ -1,5 +1,5 @@
 // src/Pages/PostComponents/PostHeader.tsx
-import { DeleteMenu } from './DeletedMenu';
+import { DeleteMenu } from './../PostComponents/DeletedMenu';
 import { formatDate } from '../../utils/dateUtils';
 
 interface PostHeaderProps {

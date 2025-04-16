@@ -1,16 +1,16 @@
-// src/Pages/Search/Search.tsx
 import { useEffect, useState, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useAuth } from '../../Contexts/AuthContexts';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '../../store/store';
 import SearchHeader from './SearchHeader';
-import UsersCard from './../SearchComponents/UserCard'
+import UsersCard from './../SearchComponents/UserCard';
 import { SkeletonUser } from '../../Components/UI/Skeleton';
 import { fetchUsers, searchUsers, getHiddenSuggestions, User } from '../../Services/SearchPageService';
 
 const SearchPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [displayedUsers, setDisplayedUsers] = useState<User[]>([]);
-  const { currentUser } = useAuth();
+  const currentUser = useSelector((state: RootState) => state.auth.currentUser);
 
   // Get hidden suggestions first to filter them out
   const { data: hiddenUserIds } = useQuery({
