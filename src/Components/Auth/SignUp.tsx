@@ -1,10 +1,11 @@
 // src/components/Auth/SignUp.tsx
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { signUpUser, clearAuthError } from '../../store/authSlice';
 import { RootState, AppDispatch } from '../../store/store';
 import { UserService } from '../../Services/UserService';
+import { useProfile } from '../../Contexts/ProfileContext';
 import Input from '../UI/Input';
 import Button from '../UI/Button';
 import SignInFooter from './Footer';
@@ -18,8 +19,11 @@ export default function SignUp() {
   const [passwordError, setPasswordError] = useState('');
   const [usernameError, setUsernameError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [profileCreationAttempted, setProfileCreationAttempted] = useState(false);
+  
   const dispatch = useDispatch<AppDispatch>();
-  const { error, loading } = useSelector((state: RootState) => state.auth);
+  const { error, loading, currentUser } = useSelector((state: RootState) => state.auth);
+  const { createProfile, loading: profileLoading, error: profileError } = useProfile();
   const navigate = useNavigate();
 
   // Generate a username from display name or email
@@ -58,7 +62,7 @@ export default function SignUp() {
 
   // Check if username is available
   const checkUsernameAvailability = async () => {
-    if (!username) return;
+    if (!username) return true;
     
     try {
       const isAvailable = await UserService.isUsernameAvailable(username);
@@ -71,16 +75,53 @@ export default function SignUp() {
       }
     } catch (err) {
       console.error('Error checking username:', err);
+      setUsernameError('Error checking username availability');
       return false;
     }
   };
 
+  // Effect to create profile after authentication succeeds
+  useEffect(() => {
+    const createUserProfile = async () => {
+      // Only proceed if we have a user and haven't already attempted profile creation
+      if (currentUser && isSubmitting && !profileCreationAttempted) {
+        setProfileCreationAttempted(true);
+        
+        try {
+          console.log('Auth user created, now creating profile', currentUser.uid);
+          
+          // Create the user profile using the ProfileContext
+          const userProfile = await createProfile({
+            uid: currentUser.uid,
+            displayName,
+            username,
+            email: currentUser.email || email,
+            photoURL: currentUser.photoURL,
+            followerCount: 0,
+            followingCount: 0
+          });
+          
+          console.log('User profile created successfully:', userProfile);
+          setIsSubmitting(false);
+          navigate('/home');
+        } catch (err) {
+          console.error('Profile creation failed:', err);
+          setIsSubmitting(false);
+        }
+      }
+    };
+    
+    createUserProfile();
+  }, [currentUser, isSubmitting, profileCreationAttempted]);
+
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     
-    // Clear previous errors
+    // Reset state
     setPasswordError('');
     setUsernameError('');
+    setProfileCreationAttempted(false);
+    dispatch(clearAuthError());
     
     if (password !== confirmPassword) {
       setPasswordError('Passwords do not match');
@@ -103,54 +144,34 @@ export default function SignUp() {
       console.log('Starting signup process');
       
       // First, create the auth user
-      const resultAction = await dispatch(signUpUser({ 
+      await dispatch(signUpUser({ 
         email, 
         password, 
         displayName 
       }));
       
-      if (signUpUser.fulfilled.match(resultAction)) {
-        const user = resultAction.payload;
-        
-        if (user && user.uid) {
-          console.log('Auth user created, now creating profile');
-          
-          // Create the user profile in Firestore
-          await UserService.createUserProfile(user.uid, {
-            displayName,
-            username,
-            email,
-            createdAt: new Date()
-          });
-          
-          console.log('User profile created, navigating to home');
-          
-          // Navigate to home after profile creation
-          navigate('/home');
-        }
-      }
+      // The profile creation will be handled by the useEffect when currentUser changes
     } catch (err) {
       console.error('Signup failed:', err);
-    } finally {
       setIsSubmitting(false);
     }
   }
 
   // Combine all errors
-  const combinedError = passwordError || usernameError || error;
-  const isLoading = loading || isSubmitting;
+  const combinedError = passwordError || usernameError || error || profileError;
+  const isLoading = loading || profileLoading || isSubmitting;
 
   return (
     <div className="flex flex-col items-center min-h-screen py-2 px-4">
       {/* Main content wrapper that fills the available space */}
       <div className="w-full max-w-md flex flex-col items-center flex-1">
         {/* Language selector at top */}
-        <div className="mb-22 text-gray-600 text-[12px]">
+        <div className="mb-6 text-gray-600 text-[12px]">
           English (US)
         </div>
         
         {/* Bookmark logo */}
-        <div className="mb-22">
+        <div className="mb-6">
           <img 
             src="./Bookmark.png" 
             alt="Bookmark" 
@@ -175,7 +196,7 @@ export default function SignUp() {
                 placeholder="Display Name"
                 value={displayName}
                 onChange={handleDisplayNameChange}
-                className="w-full px-3 py-3 border bg-[#f2f3f5] border-gray-400 rounded-xl"
+                className="w-full px-3 py-3 border bg-gray-100 border-gray-300 rounded-xl"
               />
             </div>
             
@@ -187,11 +208,14 @@ export default function SignUp() {
                 required
                 placeholder="Username"
                 value={username}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUsername(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
                 onBlur={checkUsernameAvailability}
-                className="w-full px-3 py-3 border bg-[#f2f3f5] border-gray-400 rounded-xl"
+                className="w-full px-3 py-3 border bg-gray-100 border-gray-300 rounded-xl"
               />
               {usernameError && <p className="text-red-500 text-xs mt-1">{usernameError}</p>}
+              <p className="text-gray-500 text-xs mt-1">
+                Only letters, numbers, and underscores are allowed
+              </p>
             </div>
             
             <div>
@@ -203,7 +227,7 @@ export default function SignUp() {
                 placeholder="Email address"
                 value={email}
                 onChange={handleEmailChange}
-                className="w-full px-3 py-3 border bg-[#f2f3f5] border-gray-400 rounded-xl"
+                className="w-full px-3 py-3 border bg-gray-100 border-gray-300 rounded-xl"
               />
             </div>
             
@@ -216,7 +240,7 @@ export default function SignUp() {
                 placeholder="Password"
                 value={password}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
-                className="w-full px-3 py-3 border bg-[#f2f3f5] border-gray-400 rounded-xl"
+                className="w-full px-3 py-3 border bg-gray-100 border-gray-300 rounded-xl"
               />
             </div>
             
@@ -229,7 +253,7 @@ export default function SignUp() {
                 placeholder="Confirm Password"
                 value={confirmPassword}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConfirmPassword(e.target.value)}
-                className="w-full px-3 py-3 border bg-[#f2f3f5] border-gray-400 rounded-xl"
+                className="w-full px-3 py-3 border bg-gray-100 border-gray-300 rounded-xl"
               />
             </div>
             
@@ -238,7 +262,7 @@ export default function SignUp() {
                 type="submit"
                 onClick={() => {}} // Satisfy the onClick requirement for TypeScript
                 disabled={isLoading}
-                className="w-full text-white rounded-3xl border-1 border-white"
+                className="w-full text-white bg-blue-500 hover:bg-blue-600 rounded-3xl py-2"
               >
                 {isLoading ? 'Creating account...' : 'Sign up'}
               </Button>

@@ -1,292 +1,390 @@
 // src/Services/UserService.ts
 import { 
-    collection, 
-    doc, 
-    setDoc, 
-    getDoc, 
-    updateDoc, 
-    query, 
-    where, 
-    getDocs, 
-    increment,
-    deleteDoc
-  } from 'firebase/firestore';
-  import { db } from './Firebase';
-  
-  export interface UserProfile {
-    uid: string;
-    displayName: string;
-    username: string;
-    email: string;
-    photoURL?: string;
-    bio?: string;
-    createdAt: Date;
-    updatedAt?: Date;
-    followerCount?: number;
-    followingCount?: number;
+  doc, 
+  getDoc, 
+  setDoc, 
+  updateDoc, 
+  collection, 
+  query, 
+  where, 
+  getDocs,
+  arrayUnion,
+  arrayRemove,
+  increment,
+  DocumentReference,
+  getFirestore 
+} from 'firebase/firestore';
+import { db } from './Firebase'; // Ensure the import is correct
+
+export interface UserProfile {
+  uid: string;
+  displayName: string;
+  username: string;
+  email: string;
+  photoURL?: string;
+  bio?: string;
+  followerCount: number;
+  followingCount: number;
+  createdAt?: string;
+}
+
+export class UserService {
+  // Create user profile in Firestore
+  static async createUserProfile(
+    uid: string, 
+    profileData: Partial<UserProfile>
+  ): Promise<UserProfile> {
+    try {
+      const userProfileRef = doc(db, 'users', uid);
+      
+      // Create a complete user profile object
+      const userProfile: UserProfile = {
+        uid,
+        displayName: profileData.displayName || '',
+        username: profileData.username || '',
+        email: profileData.email || '',
+        photoURL: profileData.photoURL || '',
+        bio: profileData.bio || '',
+        followerCount: profileData.followerCount || 0,
+        followingCount: profileData.followingCount || 0,
+        createdAt: profileData.createdAt || new Date().toISOString()
+      };
+      
+      // Set the document in Firestore
+      await setDoc(userProfileRef, userProfile);
+      
+      // If username is provided, add to username collection for faster lookups
+      if (userProfile.username) {
+        await this.setUsernameMapping(userProfile.username, uid);
+      }
+      
+      // Initialize following and followers documents
+      await this.createFollowingDocument(uid);
+      await this.createFollowersDocument(uid);
+      
+      return userProfile;
+    } catch (error) {
+      console.error('Error creating user profile:', error);
+      throw error;
+    }
+  }
+
+  // Create username mapping
+  static async setUsernameMapping(username: string, uid: string): Promise<void> {
+    try {
+      const usernameRef = doc(db, 'usernames', username.toLowerCase());
+      await setDoc(usernameRef, { uid });
+    } catch (error) {
+      console.error('Error setting username mapping:', error);
+      throw error;
+    }
+  }
+
+  // Create following document
+  static async createFollowingDocument(uid: string): Promise<void> {
+    try {
+      const followingRef = doc(db, 'following', uid);
+      await setDoc(followingRef, { users: [] }); // Initialize with an empty array
+    } catch (error) {
+      console.error('Error creating following document:', error);
+      throw error;
+    }
+  }
+
+  // Create followers document
+  static async createFollowersDocument(uid: string): Promise<void> {
+    try {
+      const followersRef = doc(db, 'followers', uid);
+      await setDoc(followersRef, { users: [] }); // Initialize with an empty array
+    } catch (error) {
+      console.error('Error creating followers document:', error);
+      throw error;
+    }
+  }
+
+  // Get user profile by UID
+  static async getUserProfile(uid: string): Promise<UserProfile> {
+    try {
+      const userProfileRef = doc(db, 'users', uid);
+      const userProfileSnap = await getDoc(userProfileRef);
+      
+      if (!userProfileSnap.exists()) {
+        throw new Error('User profile not found');
+      }
+      
+      return userProfileSnap.data() as UserProfile;
+    } catch (error) {
+      console.error('Error getting user profile:', error);
+      throw error;
+    }
+  }
+
+  // Update user profile
+  static async updateUserProfile(
+    uid: string, 
+    updates: Partial<UserProfile>
+  ): Promise<UserProfile> {
+    try {
+      const userProfileRef = doc(db, 'users', uid);
+      
+      // Get current profile data
+      const currentProfileSnap = await getDoc(userProfileRef);
+      if (!currentProfileSnap.exists()) {
+        throw new Error('User profile not found');
+      }
+      
+      const currentProfile = currentProfileSnap.data() as UserProfile;
+      
+      // If username is being updated, update the username mapping
+      if (updates.username && updates.username !== currentProfile.username) {
+        // Remove old username mapping
+        if (currentProfile.username) {
+          await this.removeUsernameMapping(currentProfile.username);
+        }
+        
+        // Add new username mapping
+        await this.setUsernameMapping(updates.username, uid);
+      }
+      
+      // Update the profile
+      await updateDoc(userProfileRef, updates);
+      
+      // Return the updated profile
+      return {
+        ...currentProfile,
+        ...updates
+      };
+    } catch (error) {
+      console.error('Error updating user profile:', error);
+      throw error;
+    }
+  }
+
+  // Get user by username
+  static async getUserByUsername(username: string): Promise<UserProfile | null> {
+    try {
+      // First, try to get the user ID from the username mapping
+      const uid = await this.getUserIDFromUsername(username);
+      
+      if (!uid) return null;
+      
+      // Then get the user profile using the ID
+      return await this.getUserProfile(uid);
+    } catch (error) {
+      console.error('Error getting user by username:', error);
+      throw error;
+    }
+  }
+
+  // Check if a username is available
+static async isUsernameAvailable(username: string, currentUserUid?: string): Promise<boolean> {
+  if (!username || typeof username !== 'string') {
+      console.log('Username is empty or not a string');
+      return false;
   }
   
-  export const UserService = {
-    // Create a new user profile in Firestore
-    async createUserProfile(uid: string, data: Partial<UserProfile>): Promise<UserProfile> {
-      try {
-        console.log('Creating user profile for:', uid, data);
-        const userRef = doc(db, 'users', uid);
-        
-        // Generate a unique username if not provided
-        let username = data.username;
-        if (!username) {
-          username = data.email?.split('@')[0] || uid.slice(0, 8);
-          // Check if username exists and make unique if needed
-          let isAvailable = await this.isUsernameAvailable(username);
-          let counter = 1;
-          while (!isAvailable) {
-            const newUsername = `${username}${counter}`;
-            isAvailable = await this.isUsernameAvailable(newUsername);
-            if (isAvailable) {
-              username = newUsername;
-            }
-            counter++;
-          }
-        }
-        
-        const profileData: UserProfile = {
-          uid,
-          displayName: data.displayName || username || 'User',
-          username,
-          email: data.email || '',
-          photoURL: data.photoURL || null,
-          bio: data.bio || '',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          followerCount: 0,
-          followingCount: 0,
-          ...data
-        };
-        
-        await setDoc(userRef, profileData);
-        console.log('User profile created successfully');
-        return profileData;
-      } catch (error) {
-        console.error("Error creating user profile:", error);
-        throw error;
+  try {
+      // Convert username to lowercase for consistency
+      const normalizedUsername = username.toLowerCase();
+      
+      // Check if username matches required format (letters, numbers, underscore)
+      if (!/^[a-z0-9_]+$/.test(normalizedUsername)) {
+          console.log('Username format invalid');
+          return false;
       }
-    },
-    
-    // Get user profile from Firestore
-    async getUserProfile(uid: string): Promise<UserProfile | null> {
-      try {
-        const userRef = doc(db, 'users', uid);
-        const userDoc = await getDoc(userRef);
-        
-        if (userDoc.exists()) {
-          return userDoc.data() as UserProfile;
-        }
-        return null;
-      } catch (error) {
-        console.error("Error getting user profile:", error);
-        throw error;
+      
+      // Check usernames collection
+      const usernameRef = doc(db, 'usernames', normalizedUsername);
+      const usernameSnap = await getDoc(usernameRef);
+      
+      console.log('Username snapshot:', usernameSnap.exists());
+      
+      // If document doesn't exist, username is available
+      if (!usernameSnap.exists()) {
+          return true;
       }
-    },
-    
-    // Update a user's profile information
-    async updateUserProfile(uid: string, updates: Partial<UserProfile>): Promise<UserProfile> {
-      try {
-        const userRef = doc(db, 'users', uid);
-        
-        // Check if username is being updated and is available
-        if (updates.username) {
-          const isAvailable = await this.isUsernameAvailable(updates.username, uid);
-          if (!isAvailable) {
-            throw new Error('Username is already taken');
-          }
-        }
-        
-        const updateData = {
-          ...updates,
-          updatedAt: new Date()
-        };
-        
-        await updateDoc(userRef, updateData);
-        
-        // Get the updated profile
-        const updatedProfile = await this.getUserProfile(uid);
-        if (!updatedProfile) {
-          throw new Error('Failed to retrieve updated profile');
-        }
-        
-        return updatedProfile;
-      } catch (error) {
-        console.error("Error updating user profile:", error);
-        throw error;
+      
+      // If document exists, check if it belongs to current user
+      const data = usernameSnap.data();
+      if (currentUserUid && data?.uid === currentUserUid) {
+          return true;
       }
-    },
-    
-    // Check if a username is available
-    async isUsernameAvailable(username: string, currentUserId?: string): Promise<boolean> {
-      try {
-        const usersQuery = query(
-          collection(db, 'users'),
-          where('username', '==', username)
-        );
-        
-        const querySnapshot = await getDocs(usersQuery);
-        
-        // Username is available if no user has it, or if only the current user has it
-        return querySnapshot.empty || 
-               (querySnapshot.size === 1 && querySnapshot.docs[0].id === currentUserId);
-      } catch (error) {
-        console.error("Error checking username availability:", error);
-        throw error;
-      }
-    },
-  
-    // Get user by username
-    async getUserByUsername(username: string): Promise<UserProfile | null> {
-      try {
-        const usersQuery = query(
-          collection(db, 'users'),
-          where('username', '==', username)
-        );
-        
-        const querySnapshot = await getDocs(usersQuery);
-        
-        if (!querySnapshot.empty) {
-          const userDoc = querySnapshot.docs[0];
-          return userDoc.data() as UserProfile;
-        }
-        
-        return null;
-      } catch (error) {
-        console.error("Error getting user by username:", error);
-        throw error;
-      }
-    },
-  
-    // Follow a user
-    async followUser(followerId: string, followingId: string): Promise<void> {
-      try {
-        // Check if already following
-        const isAlreadyFollowing = await this.isFollowing(followerId, followingId);
-        if (isAlreadyFollowing) return;
-        
-        const followingRef = doc(db, 'following', `${followerId}_${followingId}`);
-        
-        await setDoc(followingRef, {
-          followerId,
-          followingId,
-          createdAt: new Date()
-        });
-  
-        // Update follower/following counts
-        const followerRef = doc(db, 'users', followingId);
-        const followingUserRef = doc(db, 'users', followerId);
-  
-        await updateDoc(followerRef, {
-          followerCount: increment(1)
-        });
-  
-        await updateDoc(followingUserRef, {
-          followingCount: increment(1)
-        });
-      } catch (error) {
-        console.error("Error following user:", error);
-        throw error;
-      }
-    },
-  
-    // Unfollow a user
-    async unfollowUser(followerId: string, followingId: string): Promise<void> {
-      try {
-        // Check if actually following
-        const isFollowing = await this.isFollowing(followerId, followingId);
-        if (!isFollowing) return;
-        
-        const followingRef = doc(db, 'following', `${followerId}_${followingId}`);
-        await deleteDoc(followingRef);
-  
-        // Update follower/following counts
-        const followerRef = doc(db, 'users', followingId);
-        const followingUserRef = doc(db, 'users', followerId);
-  
-        await updateDoc(followerRef, {
-          followerCount: increment(-1)
-        });
-  
-        await updateDoc(followingUserRef, {
-          followingCount: increment(-1)
-        });
-      } catch (error) {
-        console.error("Error unfollowing user:", error);
-        throw error;
-      }
-    },
-  
-    // Check if a user is following another user
-    async isFollowing(followerId: string, followingId: string): Promise<boolean> {
-      try {
-        const followingRef = doc(db, 'following', `${followerId}_${followingId}`);
-        const followDoc = await getDoc(followingRef);
-        return followDoc.exists();
-      } catch (error) {
-        console.error("Error checking follow status:", error);
-        throw error;
-      }
-    },
-  
-    // Get suggested users (users not followed by current user)
-    async getSuggestedUsers(currentUserId: string, limit: number = 5): Promise<UserProfile[]> {
-      try {
-        // Get users current user is following
-        const followingQuery = query(
-          collection(db, 'following'),
-          where('followerId', '==', currentUserId)
-        );
-        const followingSnapshot = await getDocs(followingQuery);
-        const followingIds = followingSnapshot.docs.map(doc => doc.data().followingId);
-        followingIds.push(currentUserId); // Add current user to exclude list
-        
-        // Get all users
-        const usersSnapshot = await getDocs(collection(db, 'users'));
-        
-        // Filter out users that are already followed
-        const suggestedUsers = usersSnapshot.docs
-          .filter(doc => !followingIds.includes(doc.id))
-          .map(doc => doc.data() as UserProfile);
-        
-        return suggestedUsers.slice(0, limit);
-      } catch (error) {
-        console.error("Error getting suggested users:", error);
-        throw error;
-      }
-    },
-    
-    // Search users by username, displayName, or email
-    async searchUsers(searchTerm: string, limit: number = 20): Promise<UserProfile[]> {
-      try {
-        if (!searchTerm.trim()) {
-          const usersSnapshot = await getDocs(collection(db, 'users'));
-          return usersSnapshot.docs
-            .map(doc => doc.data() as UserProfile)
-            .slice(0, limit);
-        }
-        
-        // Get all users (up to a reasonable number) and filter client-side
-        const usersSnapshot = await getDocs(query(collection(db, 'users'), limit(100)));
-        
-        const searchTermLower = searchTerm.toLowerCase();
-        
-        return usersSnapshot.docs
-          .map(doc => doc.data() as UserProfile)
-          .filter(user => 
-            (user.username?.toLowerCase().includes(searchTermLower)) || 
-            (user.displayName?.toLowerCase().includes(searchTermLower)) ||
-            (user.email?.toLowerCase().includes(searchTermLower))
-          )
-          .slice(0, limit);
-      } catch (error) {
-        console.error("Error searching users:", error);
-        throw error;
-      }
+      
+      return false;
+  } catch (error) {
+      console.error('Error checking username availability:', error);
+      throw error;
+  }
+}
+
+  // Map username to user ID
+  static async setUsernameMapping(username: string, uid: string): Promise<void> {
+    try {
+      // Convert username to lowercase for consistency
+      username = username.toLowerCase();
+      
+      const usernameRef = doc(db, 'usernames', username);
+      await setDoc(usernameRef, { uid });
+    } catch (error) {
+      console.error('Error setting username mapping:', error);
+      throw error;
     }
-  };
+  }
+
+  // Remove username mapping
+  static async removeUsernameMapping(username: string): Promise<void> {
+    try {
+      // Convert username to lowercase for consistency
+      username = username.toLowerCase();
+      
+      const usernameRef = doc(db, 'usernames', username);
+      await setDoc(usernameRef, { uid: null });
+    } catch (error) {
+      console.error('Error removing username mapping:', error);
+      throw error;
+    }
+  }
+
+  // Get user ID from username
+  static async getUserIDFromUsername(username: string): Promise<string | null> {
+    try {
+      // Convert username to lowercase for consistency
+      username = username.toLowerCase();
+      
+      const usernameRef = doc(db, 'usernames', username);
+      const usernameSnap = await getDoc(usernameRef);
+      
+      if (!usernameSnap.exists()) return null;
+      
+      const data = usernameSnap.data();
+      return data.uid;
+    } catch (error) {
+      console.error('Error getting user ID from username:', error);
+      throw error;
+    }
+  }
+
+  // Follow a user
+  static async followUser(currentUserUid: string, targetUserUid: string): Promise<void> {
+    try {
+      // Add target user to current user's following list
+      const currentUserRef = doc(db, 'users', currentUserUid);
+      const followingRef = doc(db, 'following', currentUserUid);
+      
+      // Add current user to target user's followers list
+      const targetUserRef = doc(db, 'users', targetUserUid);
+      const followersRef = doc(db, 'followers', targetUserUid);
+      
+      // Update following document
+      await setDoc(followingRef, {
+        users: arrayUnion(targetUserUid)
+      }, { merge: true });
+      
+      // Update followers document
+      await setDoc(followersRef, {
+        users: arrayUnion(currentUserUid)
+      }, { merge: true });
+      
+      // Update follower/following counts
+      await updateDoc(currentUserRef, {
+        followingCount: increment(1)
+      });
+      
+      await updateDoc(targetUserRef, {
+        followerCount: increment(1)
+      });
+    } catch (error) {
+      console.error('Error following user:', error);
+      throw error;
+    }
+  }
+
+  // Unfollow a user
+  static async unfollowUser(currentUserUid: string, targetUserUid: string): Promise<void> {
+    try {
+      // Remove target user from current user's following list
+      const currentUserRef = doc(db, 'users', currentUserUid);
+      const followingRef = doc(db, 'following', currentUserUid);
+      
+      // Remove current user from target user's followers list
+      const targetUserRef = doc(db, 'users', targetUserUid);
+      const followersRef = doc(db, 'followers', targetUserUid);
+      
+      // Update following document
+      await updateDoc(followingRef, {
+        users: arrayRemove(targetUserUid)
+      });
+      
+      // Update followers document
+      await updateDoc(followersRef, {
+        users: arrayRemove(currentUserUid)
+      });
+      
+      // Update follower/following counts
+      await updateDoc(currentUserRef, {
+        followingCount: increment(-1)
+      });
+      
+      await updateDoc(targetUserRef, {
+        followerCount: increment(-1)
+      });
+    } catch (error) {
+      console.error('Error unfollowing user:', error);
+      throw error;
+    }
+  }
+
+  // Check if a user is following another user
+  static async isFollowing(currentUserUid: string, targetUserUid: string): Promise<boolean> {
+    try {
+      const followingRef = doc(db, 'following', currentUserUid);
+      const followingSnap = await getDoc(followingRef);
+      
+      if (!followingSnap.exists()) return false;
+      
+      const data = followingSnap.data();
+      return data.users?.includes(targetUserUid) || false;
+    } catch (error) {
+      console.error('Error checking following status:', error);
+      throw error;
+    }
+  }
+
+  // Get user suggestions (users not followed)
+  static async getUserSuggestions(uid: string, limit: number = 5): Promise<UserProfile[]> {
+    try {
+      // Get user's following list
+      const followingRef = doc(db, 'following', uid);
+      const followingSnap = await getDoc(followingRef);
+      
+      const followingList = followingSnap.exists() 
+        ? followingSnap.data().users || []
+        : [];
+      
+      // Add the current user to the exclusion list
+      const excludeUsers = [...followingList, uid];
+      
+      // Query for users not in the exclusion list
+      const usersRef = collection(db, 'users');
+      const usersQuery = query(usersRef);
+      const usersSnap = await getDocs(usersQuery);
+      
+      const suggestions: UserProfile[] = [];
+      
+      usersSnap.forEach(doc => {
+        const userData = doc.data() as UserProfile;
+        if (!excludeUsers.includes(userData.uid)) {
+          suggestions.push(userData);
+        }
+      });
+      
+      // Shuffle and limit the results
+      return suggestions
+        .sort(() => 0.5 - Math.random())
+        .slice(0, limit);
+    } catch (error) {
+      console.error('Error getting user suggestions:', error);
+      throw error;
+    }
+  }
+}

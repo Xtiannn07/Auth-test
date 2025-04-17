@@ -10,19 +10,34 @@ interface ProfileContextType {
   updateProfile: (updates: Partial<UserProfile>) => Promise<UserProfile>;
   refreshProfile: () => Promise<void>;
   createProfile: (profileData: Partial<UserProfile>) => Promise<UserProfile>;
+  checkProfileExists: () => Promise<boolean>;
 }
 
 interface ProfileProviderProps {
   children: ReactNode;
 }
 
-const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
+// Create context with a more helpful default value
+const ProfileContext = createContext<ProfileContextType>({
+  userProfile: null,
+  loading: false,
+  error: null,
+  updateProfile: async () => {
+    throw new Error('ProfileContext not initialized');
+  },
+  refreshProfile: async () => {
+    throw new Error('ProfileContext not initialized');
+  },
+  createProfile: async () => {
+    throw new Error('ProfileContext not initialized');
+  },
+  checkProfileExists: async () => {
+    throw new Error('ProfileContext not initialized');
+  }
+});
 
 export function useProfile() {
   const context = useContext(ProfileContext);
-  if (!context) {
-    throw new Error('useProfile must be used within a ProfileProvider');
-  }
   return context;
 }
 
@@ -55,8 +70,28 @@ export function ProfileProvider({ children }: ProfileProviderProps) {
 
   // Fetch profile whenever currentUser changes
   useEffect(() => {
-    fetchUserProfile();
+    if (currentUser?.uid) {
+      fetchUserProfile();
+    } else {
+      setUserProfile(null);
+      setLoading(false);
+    }
   }, [currentUser?.uid]);
+
+  // Function to check if profile exists
+  const checkProfileExists = async (): Promise<boolean> => {
+    if (!currentUser) {
+      return false;
+    }
+    
+    try {
+      const profile = await UserService.getUserProfile(currentUser.uid);
+      return !!profile;
+    } catch (err) {
+      console.error('Error checking profile existence:', err);
+      return false;
+    }
+  };
 
   // Function to create a new profile
   const createProfile = async (profileData: Partial<UserProfile>): Promise<UserProfile> => {
@@ -68,17 +103,47 @@ export function ProfileProvider({ children }: ProfileProviderProps) {
       setLoading(true);
       setError(null);
       
-      const profile = await UserService.createUserProfile(currentUser.uid, {
-        ...profileData,
-        email: currentUser.email || '',
-        photoURL: currentUser.photoURL || undefined
-      });
+      // Make sure we have a UID
+      const uid = profileData.uid || currentUser.uid;
       
+      // Check if profile already exists to avoid duplicates
+      try {
+        const existingProfile = await UserService.getUserProfile(uid);
+        
+        if (existingProfile) {
+          console.log('Profile already exists, returning existing profile');
+          setUserProfile(existingProfile);
+          return existingProfile;
+        }
+      } catch (error) {
+        // If error is because profile doesn't exist, continue with creation
+        console.log('No existing profile found, creating new one');
+      }
+      
+      // Prepare complete profile data
+      const completeProfileData = {
+        uid,
+        displayName: profileData.displayName || currentUser.displayName || '',
+        username: profileData.username || '',
+        email: profileData.email || currentUser.email || '',
+        photoURL: profileData.photoURL || currentUser.photoURL || '',
+        bio: profileData.bio || '',
+        followerCount: profileData.followerCount || 0,
+        followingCount: profileData.followingCount || 0,
+        createdAt: new Date().toISOString()
+      };
+      
+      console.log('Creating new user profile with data:', completeProfileData);
+      
+      // Create the profile
+      const profile = await UserService.createUserProfile(uid, completeProfileData);
+      
+      console.log('Profile created successfully:', profile);
       setUserProfile(profile);
       return profile;
     } catch (err: any) {
       console.error('Error creating profile:', err);
-      setError('Failed to create profile');
+      setError('Failed to create profile: ' + (err.message || ''));
       throw err;
     } finally {
       setLoading(false);
@@ -118,7 +183,8 @@ export function ProfileProvider({ children }: ProfileProviderProps) {
     error,
     updateProfile,
     refreshProfile,
-    createProfile
+    createProfile,
+    checkProfileExists
   };
 
   return (

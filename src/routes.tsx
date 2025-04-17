@@ -16,7 +16,7 @@ const ProfilePage = lazy(() => import('./Pages/Profile/Profile'));
 
 
 const LazyRoute = ({ component: Component }: { component: React.ComponentType }) => (
-  <Suspense fallback={<div>Loading...</div>}>
+  <Suspense fallback={<div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>}>
     <Component />
   </Suspense>
 );
@@ -76,8 +76,8 @@ const routes = [
       </PrivateRoute>
     ),
   },
-  {
-    path: '/profile',
+{
+  path: '/profile/:username', // Dynamic route for user profiles
     element: (
       <PrivateRoute>
         <AuthenticatedRouteWrapper>

@@ -105,7 +105,7 @@ const HomePage = () => {
         </div>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-6">
+      <div className="flex flex-col md:flex-row gap-4">
         <div className="flex-grow">
           {postsLoading ? (
             Array(3).fill(null).map((_, i) => (
@@ -151,7 +151,7 @@ const HomePage = () => {
         </div>
 
         {/* Right sidebar remains the same */}
-        <div className="w-full lg:w-80">
+        <div className="w-full md:w-80 lg:w-96">
           <div className="bg-white rounded-lg shadow p-4 sticky top-4">
             <h3 className="font-medium mb-4 text-lg">Who to follow</h3>
             

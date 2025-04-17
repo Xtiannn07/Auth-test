@@ -15,12 +15,11 @@ export default function AuthStateListener({ children }: { children: React.ReactN
   const dispatch = useDispatch();
 
   useEffect(() => {
-    console.log('Setting up Firebase auth state listener');
     
     // Set up Firebase auth state observer
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        console.log('Auth state changed: User logged in', user.uid);
+        console.log('Auth state changed: User logged in', user.email);
         // Extract minimal user data to store in Redux
         dispatch(setCurrentUser({
           uid: user.uid,
