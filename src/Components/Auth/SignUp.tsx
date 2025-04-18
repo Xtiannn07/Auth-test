@@ -1,4 +1,3 @@
-// src/components/Auth/SignUp.tsx
 import { useState, FormEvent, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -19,60 +18,52 @@ export default function SignUp() {
   const [passwordError, setPasswordError] = useState('');
   const [usernameError, setUsernameError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [profileCreationAttempted, setProfileCreationAttempted] = useState(false);
   
   const dispatch = useDispatch<AppDispatch>();
   const { error, loading, currentUser } = useSelector((state: RootState) => state.auth);
-  const { createProfile, loading: profileLoading, error: profileError } = useProfile();
+  const { createProfile, loading: profileLoading } = useProfile();
   const navigate = useNavigate();
 
-  // Generate a username from display name or email
   const generateUsername = (value: string): string => {
     if (!value) return '';
-    // Remove spaces, special chars, and make lowercase
     return value
       .toLowerCase()
       .replace(/\s+/g, '')
-      .replace(/[^a-z0-9]/g, '')
+      .replace(/[^a-z0-9_]/g, '')
       .substring(0, 15);
   };
 
-  // Handle display name change and suggest username
   const handleDisplayNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setDisplayName(value);
-    
-    // Only suggest username if user hasn't manually entered one yet
     if (!username && value) {
       setUsername(generateUsername(value));
     }
   };
 
-  // Handle email change and suggest username if none provided
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setEmail(value);
-    
-    // Only suggest username from email if no display name and no username yet
     if (!username && !displayName && value) {
       const emailUsername = value.split('@')[0];
       setUsername(generateUsername(emailUsername));
     }
   };
 
-  // Check if username is available
   const checkUsernameAvailability = async () => {
-    if (!username) return true;
+    if (!username) {
+      setUsernameError('Username is required');
+      return false;
+    }
     
     try {
       const isAvailable = await UserService.isUsernameAvailable(username);
       if (!isAvailable) {
         setUsernameError('Username is already taken');
         return false;
-      } else {
-        setUsernameError('');
-        return true;
       }
+      setUsernameError('');
+      return true;
     } catch (err) {
       console.error('Error checking username:', err);
       setUsernameError('Error checking username availability');
@@ -80,47 +71,11 @@ export default function SignUp() {
     }
   };
 
-  // Effect to create profile after authentication succeeds
-  useEffect(() => {
-    const createUserProfile = async () => {
-      // Only proceed if we have a user and haven't already attempted profile creation
-      if (currentUser && isSubmitting && !profileCreationAttempted) {
-        setProfileCreationAttempted(true);
-        
-        try {
-          console.log('Auth user created, now creating profile', currentUser.uid);
-          
-          // Create the user profile using the ProfileContext
-          const userProfile = await createProfile({
-            uid: currentUser.uid,
-            displayName,
-            username,
-            email: currentUser.email || email,
-            photoURL: currentUser.photoURL,
-            followerCount: 0,
-            followingCount: 0
-          });
-          
-          console.log('User profile created successfully:', userProfile);
-          setIsSubmitting(false);
-          navigate('/home');
-        } catch (err) {
-          console.error('Profile creation failed:', err);
-          setIsSubmitting(false);
-        }
-      }
-    };
-    
-    createUserProfile();
-  }, [currentUser, isSubmitting, profileCreationAttempted]);
-
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     
-    // Reset state
     setPasswordError('');
     setUsernameError('');
-    setProfileCreationAttempted(false);
     dispatch(clearAuthError());
     
     if (password !== confirmPassword) {
@@ -128,49 +83,53 @@ export default function SignUp() {
       return;
     }
     
-    // Username is required
-    if (!username) {
-      setUsernameError('Username is required');
-      return;
-    }
-    
-    // Check username availability
     const isAvailable = await checkUsernameAvailability();
     if (!isAvailable) return;
     
     setIsSubmitting(true);
     
     try {
-      console.log('Starting signup process');
-      
-      // First, create the auth user
-      await dispatch(signUpUser({ 
+      // 1. Create auth user
+      const result = await dispatch(signUpUser({ 
         email, 
         password, 
         displayName 
       }));
       
-      // The profile creation will be handled by the useEffect when currentUser changes
+      if (signUpUser.fulfilled.match(result)) {
+        const user = result.payload;
+        
+        // 2. Create user profile
+        const profile = await createProfile({
+          uid: user.uid,
+          displayName,
+          username,
+          email: user.email || email,
+          photoURL: user.photoURL || '',
+          followerCount: 0,
+          followingCount: 0
+        });
+        
+        console.log('Profile created:', profile);
+        navigate('/home');
+      }
     } catch (err) {
       console.error('Signup failed:', err);
+    } finally {
       setIsSubmitting(false);
     }
   }
 
-  // Combine all errors
-  const combinedError = passwordError || usernameError || error || profileError;
+  const combinedError = passwordError || usernameError || error;
   const isLoading = loading || profileLoading || isSubmitting;
 
   return (
     <div className="flex flex-col items-center min-h-screen py-2 px-4">
-      {/* Main content wrapper that fills the available space */}
       <div className="w-full max-w-md flex flex-col items-center flex-1">
-        {/* Language selector at top */}
         <div className="mb-6 text-gray-600 text-[12px]">
           English (US)
         </div>
         
-        {/* Bookmark logo */}
         <div className="mb-6">
           <img 
             src="./Bookmark.png" 
@@ -179,7 +138,6 @@ export default function SignUp() {
           />
         </div>
         
-        {/* Form container */}
         <div className="w-full">
           {combinedError && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4" role="alert">
@@ -208,7 +166,7 @@ export default function SignUp() {
                 required
                 placeholder="Username"
                 value={username}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
                 onBlur={checkUsernameAvailability}
                 className="w-full px-3 py-3 border bg-gray-100 border-gray-300 rounded-xl"
               />
@@ -239,7 +197,7 @@ export default function SignUp() {
                 required
                 placeholder="Password"
                 value={password}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
+                onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-3 py-3 border bg-gray-100 border-gray-300 rounded-xl"
               />
             </div>
@@ -252,7 +210,7 @@ export default function SignUp() {
                 required
                 placeholder="Confirm Password"
                 value={confirmPassword}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConfirmPassword(e.target.value)}
+                onChange={(e) => setConfirmPassword(e.target.value)}
                 className="w-full px-3 py-3 border bg-gray-100 border-gray-300 rounded-xl"
               />
             </div>
@@ -260,7 +218,6 @@ export default function SignUp() {
             <div className='w-full max-w-md flex p-[1px] rounded-3xl bg-white'>
               <Button
                 type="submit"
-                onClick={() => {}} // Satisfy the onClick requirement for TypeScript
                 disabled={isLoading}
                 className="w-full text-white bg-blue-500 hover:bg-blue-600 rounded-3xl py-2"
               >
@@ -279,8 +236,6 @@ export default function SignUp() {
           </form>
         </div>
       </div>
-
-      {/* Footer */}
       <SignInFooter />
     </div>
   );

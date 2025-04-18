@@ -1,0 +1,139 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ==================== USERNAMES COLLECTION ====================
+    match /usernames/{username} {
+      allow get: if true;
+      allow create, update, delete: if request.auth != null && 
+                                   request.auth.uid == resource.data.uid;
+    }
+
+    // ==================== USERS COLLECTION ====================
+    match /users/{userId} {
+      allow read: if true;
+      allow create: if request.auth != null && 
+                   request.auth.uid == userId &&
+                   request.resource.data.keys().hasOnly([
+                     "uid",
+                     "displayName",
+                     "username",
+                     "email",
+                     "photoURL",
+                     "bio",
+                     "followerCount",
+                     "followingCount",
+                     "createdAt"
+                   ]);
+      allow update: if request.auth != null && 
+                    request.auth.uid == userId &&
+                    onlyUpdatesAllowedFields(request.resource.data, resource.data);
+      
+      // User's posts subcollection
+      match /posts/{postId} {
+        allow read: if true;
+        allow create: if request.auth != null && 
+                      request.auth.uid == userId &&
+                      validPostDocument(request.resource.data);
+      }
+      
+      // Followers subcollection
+      match /followers/{followerId} {
+        allow read: if true;
+        allow write: if false; // Handle via Cloud Function
+      }
+      
+      // Following subcollection
+      match /following/{followedId} {
+        allow read: if true;
+        allow write: if false; // Handle via Cloud Function
+      }
+    }
+
+    // ==================== POSTS COLLECTION ====================
+    match /posts/{postId} {
+      allow get, list: if true;
+      allow create: if request.auth != null && 
+                    validPostDocument(request.resource.data) &&
+                    request.resource.data.author.id == request.auth.uid;
+      allow update: if isPostAuthor() && 
+                   withinEditWindow() && 
+                   onlyUpdatesAllowedPostFields(request.resource.data, resource.data);
+      allow update: if request.auth != null &&
+                   onlyUpdatesLikes(request.resource.data, resource.data) &&
+                   validLikeOperation(request.resource.data.likes, resource.data.likes);
+      allow delete: if isPostAuthor();
+    }
+    // ==================== HELPER FUNCTIONS ====================
+    function isUserOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    function validUserDocument(data) {
+      return data.keys().hasOnly([
+        "displayName",
+        "username",
+        "bio",
+        "website",
+        "avatarUrl",
+        "createdAt"
+      ]) && data.username is string &&
+           data.displayName is string &&
+           (data.bio == null || data.bio is string) &&
+           (data.website == null || data.website is string) &&
+           (data.avatarUrl == null || data.avatarUrl is string);
+    }
+
+    function onlyUpdatesAllowedFields(newData, oldData) {
+      return newData.diff(oldData).affectedKeys().hasOnly([
+        "displayName",
+        "bio",
+        "website",
+        "avatarUrl"
+      ]);
+    }
+
+    function isPostAuthor() {
+      return request.auth != null && 
+             request.auth.uid == resource.data.author.id;
+    }
+
+    function withinEditWindow() {
+      return request.time < resource.data.createdAt + duration.value(24, 'h');
+    }
+
+    function validPostDocument(data) {
+      return data.keys().hasOnly([
+        "title",
+        "content",
+        "author",
+        "likes",
+        "createdAt"
+      ]) && data.title is string &&
+           data.content is string &&
+           data.author is map &&
+           data.author.id is string &&
+           data.author.name is string &&
+           data.likes is list &&
+           data.createdAt is timestamp;
+    }
+
+    function onlyUpdatesAllowedPostFields(newData, oldData) {
+      return newData.diff(oldData).affectedKeys().hasOnly(["title", "content"]);
+    }
+
+    function onlyUpdatesLikes(newData, oldData) {
+      return newData.diff(oldData).affectedKeys().hasOnly(["likes"]);
+    }
+
+    function validLikeOperation(newLikes, oldLikes) {
+      // Ensure only one like change at a time
+      return newLikes.size() == oldLikes.size() + 1 ||
+             newLikes.size() == oldLikes.size() - 1;
+    }
+
+    // ==================== DEFAULT DENY ====================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

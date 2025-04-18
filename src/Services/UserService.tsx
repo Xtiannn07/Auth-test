@@ -1,4 +1,3 @@
-// src/Services/UserService.ts
 import { 
   doc, 
   getDoc, 
@@ -14,7 +13,7 @@ import {
   DocumentReference,
   getFirestore 
 } from 'firebase/firestore';
-import { db } from './Firebase'; // Ensure the import is correct
+import { db } from './Firebase';
 
 export interface UserProfile {
   uid: string;
@@ -84,7 +83,7 @@ export class UserService {
   static async createFollowingDocument(uid: string): Promise<void> {
     try {
       const followingRef = doc(db, 'following', uid);
-      await setDoc(followingRef, { users: [] }); // Initialize with an empty array
+      await setDoc(followingRef, { users: [] });
     } catch (error) {
       console.error('Error creating following document:', error);
       throw error;
@@ -95,7 +94,7 @@ export class UserService {
   static async createFollowersDocument(uid: string): Promise<void> {
     try {
       const followersRef = doc(db, 'followers', uid);
-      await setDoc(followersRef, { users: [] }); // Initialize with an empty array
+      await setDoc(followersRef, { users: [] });
     } catch (error) {
       console.error('Error creating followers document:', error);
       throw error;
@@ -177,56 +176,33 @@ export class UserService {
   }
 
   // Check if a username is available
-static async isUsernameAvailable(username: string, currentUserUid?: string): Promise<boolean> {
-  if (!username || typeof username !== 'string') {
-      console.log('Username is empty or not a string');
+  static async isUsernameAvailable(username: string, currentUserUid?: string): Promise<boolean> {
+    if (!username || typeof username !== 'string') {
       return false;
-  }
-  
-  try {
-      // Convert username to lowercase for consistency
+    }
+    
+    try {
       const normalizedUsername = username.toLowerCase();
       
-      // Check if username matches required format (letters, numbers, underscore)
       if (!/^[a-z0-9_]+$/.test(normalizedUsername)) {
-          console.log('Username format invalid');
-          return false;
+        return false;
       }
       
-      // Check usernames collection
       const usernameRef = doc(db, 'usernames', normalizedUsername);
       const usernameSnap = await getDoc(usernameRef);
       
-      console.log('Username snapshot:', usernameSnap.exists());
-      
-      // If document doesn't exist, username is available
       if (!usernameSnap.exists()) {
-          return true;
+        return true;
       }
       
-      // If document exists, check if it belongs to current user
       const data = usernameSnap.data();
       if (currentUserUid && data?.uid === currentUserUid) {
-          return true;
+        return true;
       }
       
       return false;
-  } catch (error) {
-      console.error('Error checking username availability:', error);
-      throw error;
-  }
-}
-
-  // Map username to user ID
-  static async setUsernameMapping(username: string, uid: string): Promise<void> {
-    try {
-      // Convert username to lowercase for consistency
-      username = username.toLowerCase();
-      
-      const usernameRef = doc(db, 'usernames', username);
-      await setDoc(usernameRef, { uid });
     } catch (error) {
-      console.error('Error setting username mapping:', error);
+      console.error('Error checking username availability:', error);
       throw error;
     }
   }
@@ -234,9 +210,7 @@ static async isUsernameAvailable(username: string, currentUserUid?: string): Pro
   // Remove username mapping
   static async removeUsernameMapping(username: string): Promise<void> {
     try {
-      // Convert username to lowercase for consistency
       username = username.toLowerCase();
-      
       const usernameRef = doc(db, 'usernames', username);
       await setDoc(usernameRef, { uid: null });
     } catch (error) {
@@ -248,9 +222,7 @@ static async isUsernameAvailable(username: string, currentUserUid?: string): Pro
   // Get user ID from username
   static async getUserIDFromUsername(username: string): Promise<string | null> {
     try {
-      // Convert username to lowercase for consistency
       username = username.toLowerCase();
-      
       const usernameRef = doc(db, 'usernames', username);
       const usernameSnap = await getDoc(usernameRef);
       
