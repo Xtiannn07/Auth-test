@@ -1,8 +1,8 @@
 // src/Pages/Search/api.ts
 import { collection, getDocs, query, where, orderBy, limit, doc, setDoc, getDoc } from 'firebase/firestore';
-import { db, auth } from './Firebase';
+import { db, auth } from '../../Services/Firebase';
 import { User as FirebaseUser } from 'firebase/auth';
-import { UserService, UserProfile } from './UserService';
+import { UserService, UserProfile } from '../../Services/UserService';
 
 // Use the User interface from UserService
 export type User = UserProfile;

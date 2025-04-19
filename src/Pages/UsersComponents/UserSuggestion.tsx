@@ -46,7 +46,7 @@ const UserSuggestion = ({ user, onFollow }: UserSuggestionProps) => {
     try {
       // Use the removeUserSuggestion function from SearchPageService
       // Note: In the future, this could be moved to UserService for consistency
-      await import('../../Services/SearchPageService').then(module => {
+      await import('../SearchComponents/SearchApi').then(module => {
         return module.removeUserSuggestion(user.id, currentUser.uid);
       });
       

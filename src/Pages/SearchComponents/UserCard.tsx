@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
 import UsersActionButtons from './UsersActionButtons';
-import { User, isUserFollowed } from './../../Services/SearchPageService';
+import { User, isUserFollowed } from './SearchApi';
 
 interface UsersCardProps {
   user: User;

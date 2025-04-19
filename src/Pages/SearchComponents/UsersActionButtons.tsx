@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { UserMinus, UserPlus, X } from 'lucide-react';
-import { removeUserSuggestion } from './../../Services/SearchPageService';
+import { removeUserSuggestion } from './SearchApi';
 import { UserService } from './../../Services/UserService'; // Import UserService
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../store/store';

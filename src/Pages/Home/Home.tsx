@@ -5,7 +5,7 @@ import { RootState } from '../../store/store';
 import PostCard from '../../Pages/PostComponents/PostCard';
 import UserSuggestion from '../UsersComponents/UserSuggestion';
 import { SkeletonCard, SkeletonUser } from '../../Components/UI/Skeleton';
-import { PostService } from '../../Services/HomePagePostService';
+import { PostService } from '../../Services/PostService';
 import { UserService } from '../../Services/UserService';
 
 const HomePage = () => {

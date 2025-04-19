@@ -5,7 +5,7 @@ import { RootState } from '../../store/store';
 import SearchHeader from './SearchHeader';
 import UsersCard from './../SearchComponents/UserCard';
 import { SkeletonUser } from '../../Components/UI/Skeleton';
-import { fetchUsers, searchUsers, getHiddenSuggestions, User } from '../../Services/SearchPageService';
+import { fetchUsers, searchUsers, getHiddenSuggestions, User } from '../SearchComponents/SearchApi';
 
 const SearchPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
