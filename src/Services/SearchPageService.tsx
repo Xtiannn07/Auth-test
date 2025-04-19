@@ -2,89 +2,49 @@
 import { collection, getDocs, query, where, orderBy, limit, doc, setDoc, getDoc } from 'firebase/firestore';
 import { db, auth } from './Firebase';
 import { User as FirebaseUser } from 'firebase/auth';
+import { UserService, UserProfile } from './UserService';
 
-export interface User {
-  id: string;
-  username?: string;
-  displayName?: string;
-  email?: string;
-  photoURL?: string;
-}
+// Use the User interface from UserService
+export type User = UserProfile;
 
-// Since we can't list users from Firebase Auth directly in client code,
-// we need to maintain a separate users collection in Firestore
+// Fetch recent users - delegating to UserService
 export const fetchUsers = async (limitCount = 10): Promise<User[]> => {
   try {
-    const usersQuery = query(
-      collection(db, 'users'),
-      orderBy('createdAt', 'desc'), // Assuming users have a createdAt field
-      limit(limitCount)
-    );
-    
-    const querySnapshot = await getDocs(usersQuery);
-    return querySnapshot.docs.map(doc => ({ 
-      id: doc.id, 
-      ...doc.data() 
-    } as User));
+    return await UserService.fetchUsers(limitCount);
   } catch (error) {
     console.error("Error fetching users:", error);
     throw error;
   }
 };
 
-// Search users by username or displayName
+// Search users by username or displayName - delegating to UserService
 export const searchUsers = async (searchTerm: string): Promise<User[]> => {
-  if (!searchTerm.trim()) {
-    return fetchUsers();
-  }
-
   try {
-    // Unfortunately, Firestore doesn't support native case-insensitive search
-    // We'll get all users (up to a reasonable limit) and filter client-side
-    const usersQuery = query(
-      collection(db, 'users'),
-      limit(100) // Limit to avoid too much data transfer
-    );
-    
-    const querySnapshot = await getDocs(usersQuery);
-    const searchTermLower = searchTerm.toLowerCase();
-    
-    return querySnapshot.docs
-      .map(doc => ({ id: doc.id, ...doc.data() } as User))
-      .filter(user => 
-        (user.username?.toLowerCase().includes(searchTermLower)) || 
-        (user.displayName?.toLowerCase().includes(searchTermLower)) ||
-        (user.email?.toLowerCase().includes(searchTermLower))
-      )
-      .slice(0, 20); // Limit to 20 results
+    return await UserService.searchUsers(searchTerm);
   } catch (error) {
     console.error("Error searching users:", error);
     throw error;
   }
 };
 
-// Follow a user
+// Follow a user - delegating to UserService
 export const followUser = async (followerId: string, followingId: string): Promise<void> => {
-  const followingRef = doc(db, 'following', `${followerId}_${followingId}`);
-  
-  // Check if already following
-  const followDoc = await getDoc(followingRef);
-  if (followDoc.exists()) {
-    return; // Already following
+  try {
+    await UserService.followUser(followerId, followingId);
+  } catch (error) {
+    console.error("Error following user:", error);
+    throw error;
   }
-  
-  await setDoc(followingRef, {
-    followerId,
-    followingId,
-    createdAt: new Date()
-  });
 };
 
-// Check if a user is already followed
+// Check if a user is already followed - delegating to UserService
 export const isUserFollowed = async (followerId: string, followingId: string): Promise<boolean> => {
-  const followingRef = doc(db, 'following', `${followerId}_${followingId}`);
-  const followDoc = await getDoc(followingRef);
-  return followDoc.exists();
+  try {
+    return await UserService.isFollowing(followerId, followingId);
+  } catch (error) {
+    console.error("Error checking following status:", error);
+    throw error;
+  }
 };
 
 // Remove a user from suggestions

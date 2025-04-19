@@ -6,6 +6,7 @@ import PostCard from '../../Pages/PostComponents/PostCard';
 import UserSuggestion from '../UsersComponents/UserSuggestion';
 import { SkeletonCard, SkeletonUser } from '../../Components/UI/Skeleton';
 import { PostService } from '../../Services/HomePagePostService';
+import { UserService } from '../../Services/UserService';
 
 const HomePage = () => {
   const [activeFilter, setActiveFilter] = useState('latest');
@@ -29,7 +30,7 @@ const HomePage = () => {
     isLoading: suggestionsLoading,
   } = useQuery({
     queryKey: ['userSuggestions'],
-    queryFn: () => currentUser ? PostService.fetchUserSuggestions(currentUser.uid) : [],
+    queryFn: () => currentUser ? UserService.getUserSuggestions(currentUser.uid) : [], // Changed to UserService
     staleTime: 5 * 60 * 1000,
     enabled: !!currentUser,
   });
@@ -60,7 +61,7 @@ const HomePage = () => {
     if (!currentUser) return;
     
     try {
-      await PostService.followUser(currentUser.uid, userId);
+      await UserService.followUser(currentUser.uid, userId); // Changed to UserService
       queryClient.invalidateQueries({ queryKey: ['userSuggestions'] });
     } catch (error) {
       console.error('Error following user:', error);
@@ -151,7 +152,7 @@ const HomePage = () => {
         </div>
 
         {/* Right sidebar remains the same */}
-        <div className="w-full md:w-80 lg:w-96">
+        <div className="w-full md:w-60 lg:w-96">
           <div className="bg-white rounded-lg shadow p-4 sticky top-4">
             <h3 className="font-medium mb-4 text-lg">Who to follow</h3>
             

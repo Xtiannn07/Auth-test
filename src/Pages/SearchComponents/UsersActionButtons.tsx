@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { UserMinus, UserPlus, X } from 'lucide-react';
-import { followUser, removeUserSuggestion } from './../../Services/SearchPageService';
+import { removeUserSuggestion } from './../../Services/SearchPageService';
+import { UserService } from './../../Services/UserService'; // Import UserService
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
 
@@ -31,7 +32,8 @@ const UsersActionButtons: React.FC<UsersActionButtonsProps> = ({
     
     setIsLoading(true);
     try {
-      await followUser(currentUser.uid, userId);
+      // Use UserService instead of SearchPageService
+      await UserService.followUser(currentUser.uid, userId);
       setCurrentIsFollowing(true);
       if (onFollowStatusChange) {
         onFollowStatusChange(true);

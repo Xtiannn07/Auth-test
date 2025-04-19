@@ -11,7 +11,9 @@ import {
   arrayRemove,
   increment,
   DocumentReference,
-  getFirestore 
+  getFirestore,
+  orderBy,
+  limit
 } from 'firebase/firestore';
 import { db } from './Firebase';
 
@@ -25,6 +27,7 @@ export interface UserProfile {
   followerCount: number;
   followingCount: number;
   createdAt?: string;
+  id?: string; // Added for compatibility with existing User type
 }
 
 export class UserService {
@@ -118,7 +121,9 @@ export class UserService {
         throw new Error('User profile not found');
       }
       
-      return userProfileSnap.data() as UserProfile;
+      const userData = userProfileSnap.data() as UserProfile;
+      // Ensure id field is set for compatibility
+      return { ...userData, id: uid };
     } catch (error) {
       console.error('Error getting user profile:', error);
       throw error;
@@ -156,10 +161,13 @@ export class UserService {
       await updateDoc(userProfileRef, updates);
       
       // Return the updated profile
-      return {
+      const updatedProfile = {
         ...currentProfile,
         ...updates
       };
+      
+      // Ensure id field is set for compatibility
+      return { ...updatedProfile, id: uid };
     } catch (error) {
       console.error('Error updating user profile:', error);
       throw error;
@@ -278,6 +286,59 @@ export class UserService {
     }
   }
 
+  // Fetch users with pagination
+  static async fetchUsers(limitCount = 10): Promise<UserProfile[]> {
+    try {
+      const usersQuery = query(
+        collection(db, 'users'),
+        orderBy('createdAt', 'desc'),
+        limit(limitCount)
+      );
+      
+      const querySnapshot = await getDocs(usersQuery);
+      return querySnapshot.docs.map(doc => {
+        const userData = doc.data() as UserProfile;
+        return { ...userData, id: doc.id };
+      });
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      throw error;
+    }
+  }
+
+  // Search users
+  static async searchUsers(searchTerm: string): Promise<UserProfile[]> {
+    if (!searchTerm.trim()) {
+      return this.fetchUsers();
+    }
+
+    try {
+      // Get all users (up to a reasonable limit) and filter client-side
+      const usersQuery = query(
+        collection(db, 'users'),
+        limit(100)
+      );
+      
+      const querySnapshot = await getDocs(usersQuery);
+      const searchTermLower = searchTerm.toLowerCase();
+      
+      return querySnapshot.docs
+        .map(doc => {
+          const userData = doc.data() as UserProfile;
+          return { ...userData, id: doc.id };
+        })
+        .filter(user => 
+          (user.username?.toLowerCase().includes(searchTermLower)) || 
+          (user.displayName?.toLowerCase().includes(searchTermLower)) ||
+          (user.email?.toLowerCase().includes(searchTermLower))
+        )
+        .slice(0, 20); // Limit to 20 results
+    } catch (error) {
+      console.error("Error searching users:", error);
+      throw error;
+    }
+  }
+
   // Unfollow a user
   static async unfollowUser(currentUserUid: string, targetUserUid: string): Promise<void> {
     try {
@@ -353,7 +414,7 @@ export class UserService {
       usersSnap.forEach(doc => {
         const userData = doc.data() as UserProfile;
         if (!excludeUsers.includes(userData.uid)) {
-          suggestions.push(userData);
+          suggestions.push({ ...userData, id: doc.id });
         }
       });
       
