@@ -99,19 +99,26 @@ export default function SignUp() {
       if (signUpUser.fulfilled.match(result)) {
         const user = result.payload;
         
-        // 2. Create user profile
-        const profile = await createProfile({
-          uid: user.uid,
-          displayName,
-          username,
-          email: user.email || email,
-          photoURL: user.photoURL || '',
-          followerCount: 0,
-          followingCount: 0
-        });
-        
-        console.log('Profile created:', profile);
-        navigate('/home');
+        try {
+          // 2. Create user profile
+          const profile = await createProfile({
+            uid: user.uid,
+            displayName,
+            username,
+            email: user.email || email,
+            photoURL: user.photoURL || '',
+            followerCount: 0,
+            followingCount: 0
+          });
+          
+          console.log('Profile created:', profile);
+          navigate('/home');
+        } catch (profileErr: any) {
+          console.error('Profile creation failed:', profileErr);
+          // Show specific error for profile creation
+          const errorMessage = profileErr.message || 'Failed to create user profile';
+          dispatch({ type: 'auth/setError', payload: errorMessage });
+        }
       }
     } catch (err) {
       console.error('Signup failed:', err);

@@ -120,23 +120,42 @@ export function ProfileProvider({ children }: ProfileProviderProps) {
         console.log('No existing profile found, creating new one');
       }
       
-      // Prepare complete profile data
-      const completeProfileData = {
-        uid,
-        displayName: profileData.displayName || currentUser.displayName || '',
-        username: profileData.username || '',
-        email: profileData.email || currentUser.email || '',
-        photoURL: profileData.photoURL || currentUser.photoURL || '',
-        bio: profileData.bio || '',
-        followerCount: profileData.followerCount || 0,
-        followingCount: profileData.followingCount || 0,
-        createdAt: new Date().toISOString()
-      };
-      
-      console.log('Creating new user profile with data:', completeProfileData);
-      
-      // Create the profile
-      const profile = await UserService.createUserProfile(uid, completeProfileData);
+      // Create the profile but catch specific errors
+      let profile;
+      try {
+        // Prepare complete profile data
+        const completeProfileData = {
+          uid,
+          displayName: profileData.displayName || currentUser.displayName || '',
+          username: profileData.username || '',
+          email: profileData.email || currentUser.email || '',
+          photoURL: profileData.photoURL || currentUser.photoURL || '',
+          bio: profileData.bio || '',
+          followerCount: profileData.followerCount || 0,
+          followingCount: profileData.followingCount || 0,
+          createdAt: new Date().toISOString()
+        };
+        
+        console.log('Creating new user profile with data:', completeProfileData);
+        profile = await UserService.createUserProfile(uid, completeProfileData);
+      } catch (err: any) {
+        console.error('Error in profile creation. Creating minimal profile');
+        // Create a minimal profile if main creation fails
+        profile = {
+          uid,
+          displayName: profileData.displayName || currentUser.displayName || '',
+          username: profileData.username || `user_${uid.substring(0, 8)}`,
+          email: profileData.email || currentUser.email || '',
+          photoURL: profileData.photoURL || currentUser.photoURL || '',
+          bio: '',
+          followerCount: 0,
+          followingCount: 0,
+          createdAt: new Date().toISOString()
+        };
+        
+        // Try to create just the basic profile
+        await UserService.createUserProfile(uid, profile);
+      }
       
       console.log('Profile created successfully:', profile);
       setUserProfile(profile);

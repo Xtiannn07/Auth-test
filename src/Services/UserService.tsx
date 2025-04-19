@@ -35,7 +35,6 @@ export class UserService {
   ): Promise<UserProfile> {
     try {
       const userProfileRef = doc(db, 'users', uid);
-      
       // Create a complete user profile object
       const userProfile: UserProfile = {
         uid,
@@ -54,13 +53,21 @@ export class UserService {
       
       // If username is provided, add to username collection for faster lookups
       if (userProfile.username) {
-        await this.setUsernameMapping(userProfile.username, uid);
+        try {
+          await this.setUsernameMapping(userProfile.username, uid);
+        } catch (error) {
+          console.error('Error setting username mapping:', error);
+          // Continue even if username mapping fails
+        }
       }
-      
       // Initialize following and followers documents
-      await this.createFollowingDocument(uid);
-      await this.createFollowersDocument(uid);
-      
+      try {
+        await this.createFollowingDocument(uid);
+        await this.createFollowersDocument(uid);
+      } catch (error) {
+        console.error('Error creating follow documents:', error);
+        // Continue even if follow documents creation fails
+      }
       return userProfile;
     } catch (error) {
       console.error('Error creating user profile:', error);
