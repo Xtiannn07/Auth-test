@@ -1,6 +1,5 @@
-// src/routes.tsx
 import { lazy, Suspense, ReactNode } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { RootState } from './store/store';
 import AuthenticatedLayout from './Pages/Layout';
@@ -13,7 +12,6 @@ const HomePage = lazy(() => import('./Pages/Home/Home'));
 const SearchPage = lazy(() => import('./Pages/Search/Search'));
 const PostPage = lazy(() => import('./Pages/Post/Post'));
 const ProfilePage = lazy(() => import('./Pages/Profile/Profile'));
-
 
 const LazyRoute = ({ component: Component }: { component: React.ComponentType }) => (
   <Suspense fallback={<div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>}>
@@ -29,10 +27,21 @@ const AuthenticatedRouteWrapper = ({ children }: { children: ReactNode }) => {
   );
 };
 
+const RootRedirect = () => {
+  const currentUser = useSelector((state: RootState) => state.auth.currentUser);
+  const location = useLocation();
+
+  if (currentUser) {
+    return <Navigate to="/home" state={{ from: location }} replace />;
+  } else {
+    return <Navigate to="/signin" state={{ from: location }} replace />;
+  }
+};
+
 const routes = [
   {
     path: '/',
-    element: <Navigate to="/signin" />,
+    element: <RootRedirect />,
   },
   {
     path: '/signin',
@@ -76,8 +85,8 @@ const routes = [
       </PrivateRoute>
     ),
   },
-{
-  path: '/profile/:username', // Dynamic route for user profiles
+  {
+    path: '/profile/:username', // Dynamic route for user profiles
     element: (
       <PrivateRoute>
         <AuthenticatedRouteWrapper>
