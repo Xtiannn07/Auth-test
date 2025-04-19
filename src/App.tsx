@@ -37,21 +37,19 @@ function AppContent() {
   }, [location.pathname, queryClient]);
 
   return (
-    <Provider store={store}>
-      <AuthStateListener>
-        <div className="min-h-screen body">
-          <Routes>
-            {routes.map((route, index) => (
-              <Route
-                key={index}
-                path={route.path}
-                element={route.element}
-              />
-            ))}
-          </Routes>
-        </div>
-      </AuthStateListener>
-    </Provider>
+    <AuthStateListener>
+      <div className="min-h-screen body">
+        <Routes>
+          {routes.map((route, index) => (
+            <Route
+              key={index}
+              path={route.path}
+              element={route.element}
+            />
+          ))}
+        </Routes>
+      </div>
+    </AuthStateListener>
   );
 }
 

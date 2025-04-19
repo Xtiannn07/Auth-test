@@ -15,8 +15,18 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
 const auth = getAuth(app);
+const db = getFirestore(app);
+
+async function _initializeAnalytics() {
+  // If getAnalytics or any analytics initialization needs to be awaited, do it here
+  // Currently getAnalytics is synchronous, but this function is async for future-proofing
+  const analyticsInstance = getAnalytics(app);
+  return analyticsInstance;
+}
+
+const analytics = await _initializeAnalytics();
+
 // Set persistence to local to survive page refreshes
 setPersistence(auth, browserLocalPersistence)
   .then(() => {
@@ -25,6 +35,5 @@ setPersistence(auth, browserLocalPersistence)
   .catch((error) => {
     console.error('Error setting persistence:', error);
   });
-const db = getFirestore(app);
 
 export { auth, db, analytics };

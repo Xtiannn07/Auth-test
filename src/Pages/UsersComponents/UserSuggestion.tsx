@@ -33,6 +33,7 @@ const UserSuggestion = ({ user, onFollow }: UserSuggestionProps) => {
         to={`/profile/${user.username}`} 
         className="flex items-center flex-1 hover:underline"
       >
+        
         {/* Simple circle placeholder instead of Avatar */}
         <div className="w-10 h-10 rounded-full bg-gray-200 mr-3 flex items-center justify-center">
           <span className="text-gray-500 text-sm">
@@ -44,6 +45,7 @@ const UserSuggestion = ({ user, onFollow }: UserSuggestionProps) => {
           <p className="text-gray-500 text-sm truncate">@{user.username}</p>
         </div>
       </Link>
+      
       
       {/* Using native button instead of custom Button component */}
       <button
