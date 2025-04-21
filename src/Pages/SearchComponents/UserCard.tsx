@@ -79,7 +79,7 @@ const UsersCard: React.FC<UsersCardProps> = ({ user, onCardRemove }) => {
       `}
     >
       <Link 
-        to={`/profile/${user.id}`} 
+        to={`/user/${user.id}`} 
         className="flex items-center flex-1"
       >
         {/* Avatar placeholder */}

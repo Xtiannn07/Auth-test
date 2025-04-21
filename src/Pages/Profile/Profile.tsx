@@ -1,92 +1,23 @@
-import { useState, useEffect } from 'react';
-import { useParams, Navigate } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
+import { useState } from 'react';
+import { useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
 import { useProfile } from '../../Contexts/ProfileContext';
-import { UserService, UserProfile } from '../../Services/UserService';
-import ProfileHeader from './ProfileHeader';
+import { UserProfile } from '../../Services/UserService';
 import ProfileEditModal from './ProfileComponents/ProfileEditModal';
-import { Loader } from 'lucide-react';
+import UserPosts from './ProfileComponents/UserPosts';
+import { Loader, Edit } from 'lucide-react';
 
 export default function ProfilePage() {
-  const { username } = useParams<{ username: string }>();
   const currentUser = useSelector((state: RootState) => state.auth.currentUser);
-  const { userProfile: myProfile } = useProfile();
+  const { userProfile: profile, loading, error } = useProfile();
   
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isCurrentUser, setIsCurrentUser] = useState(false);
-  const [isFollowing, setIsFollowing] = useState(false);
-
-  // Fetch the profile based on username
-  useEffect(() => {
-    const fetchProfile = async () => {
-      if (!username) return;
-      
-      try {
-        setLoading(true);
-        setError(null);
-
-        // Try to get user by username
-        const userProfile = await UserService.getUserByUsername(username);
-        
-        if (!userProfile) {
-          setError('User not found');
-          return;
-        }
-        
-        setProfile(userProfile);
-        
-        // Check if this is the current user's profile
-        if (currentUser && userProfile.uid === currentUser.uid) {
-          setIsCurrentUser(true);
-        } else {
-          setIsCurrentUser(false);
-          
-          // Check if current user is following this profile
-          if (currentUser) {
-            const following = await UserService.isFollowing(
-              currentUser.uid, 
-              userProfile.uid
-            );
-            setIsFollowing(following);
-          }
-        }
-      } catch (err) {
-        console.error('Error fetching profile:', err);
-        setError('Failed to load profile');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProfile();
-  }, [username, currentUser]);
-
-  // Handle follow/unfollow
-  const handleFollowUser = async () => {
-    if (!currentUser || !profile) return;
-    
-    try {
-      await UserService.followUser(currentUser.uid, profile.uid);
-      setIsFollowing(true);
-    } catch (err) {
-      console.error('Error following user:', err);
-    }
-  };
 
   // Update profile after edit
   const handleProfileUpdate = (updatedProfile: UserProfile) => {
-    setProfile(updatedProfile);
+    // Profile will be updated in context
     setIsEditModalOpen(false);
   };
-
-  // If no username parameter, redirect to current user's profile
-  if (!username && myProfile) {
-    return <Navigate to={`/profile/${myProfile.username}`} />;
-  }
 
   // Loading state
   if (loading) {
@@ -108,49 +39,85 @@ export default function ProfilePage() {
     );
   }
 
+  // Username display
+  const displayUsername = profile.username || (profile.email ? profile.email.split('@')[0] : 'User');
+
   return (
     <div className="max-w-2xl mx-auto pb-8">
-      <ProfileHeader 
-        profile={profile}
-        isCurrentUser={isCurrentUser}
-        isFollowing={isFollowing}
-        onEditProfile={() => setIsEditModalOpen(true)}
-        onFollowUser={handleFollowUser}
-      />
+      {/* Enhanced header with gradient background */}
+      <div className="bg-gradient-to-r from-blue-900 to-purple-900 text-white p-6 rounded-b-lg relative">
+        <div className="flex items-end space-x-5 pb-4">
+          {/* Profile image - larger size with subtle shadow */}
+          <div className="w-24 h-24 rounded-full border-4 border-white overflow-hidden bg-gray-200 shadow-lg">
+            {profile.photoURL ? (
+              <img 
+                src={profile.photoURL} 
+                alt={profile.displayName || displayUsername} 
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full bg-gray-300"></div>
+            )}
+          </div>
+
+          {/* User info with improved typography */}
+          <div>
+            <h1 className="text-3xl font-bold">{profile.displayName || displayUsername}</h1>
+            <p className="text-sm opacity-80 font-medium">
+              Kunware Tga New York ako
+            </p>
+            <p className="text-sm opacity-70 mt-1">
+              @{displayUsername}
+            </p>
+          </div>
+        </div>
+
+        {/* Edit profile button */}
+        <button 
+          onClick={() => setIsEditModalOpen(true)}
+          className="absolute right-6 bottom-6 px-6 py-2 rounded-full text-sm font-medium bg-white text-purple-900 hover:bg-gray-100 transition-colors flex items-center"
+        >
+          <Edit size={16} className="mr-2" />
+          Edit Profile
+        </button>
+      </div>
       
-      {/* Profile content */}
-      <div className="p-4">
-        {/* Bio */}
-        {profile.bio && (
-          <div className="mb-6">
-            <h3 className="font-medium text-gray-800 mb-2">Bio</h3>
-            <p className="text-gray-600">{profile.bio}</p>
-          </div>
+      {/* Stats section with improved styling */}
+      <div className="flex justify-around py-5 border-b border-gray-200 bg-white shadow-sm">
+        <div className="text-center">
+          <p className="font-bold text-2xl">{profile.followerCount || 0}</p>
+          <p className="text-gray-500 text-sm font-medium">Followers</p>
+        </div>
+        <div className="text-center">
+          <p className="font-bold text-2xl">{profile.followingCount || 0}</p>
+          <p className="text-gray-500 text-sm font-medium">Following</p>
+        </div>
+        <div className="text-center">
+          <p className="font-bold text-2xl">0</p>
+          <p className="text-gray-500 text-sm font-medium">Photos</p>
+        </div>
+      </div>
+      
+      {/* Bio section with improved styling */}
+      {profile.bio && (
+        <div className="p-5 bg-white mt-4 rounded-lg shadow-sm">
+          <p className="text-gray-700 leading-relaxed">{profile.bio}</p>
+        </div>
+      )}
+      
+      {/* Posts section with UserPosts component */}
+      <div className="mt-6 bg-white p-5 rounded-lg shadow-sm">
+        <h2 className="text-xl font-semibold mb-4 flex items-center">
+          <span className="mr-2">Posts</span>
+          <span className="text-sm font-normal text-gray-500">
+            {currentUser && <span>(Your content)</span>}
+          </span>
+        </h2>
+        
+        {/* Use the new UserPosts component */}
+        {currentUser && (
+          <UserPosts userId={currentUser.uid} />
         )}
-        
-        {/* Statistics */}
-        <div className="flex justify-around bg-white rounded-lg shadow-sm p-4 mb-6">
-          <div className="text-center">
-            <p className="font-bold text-lg">{profile.followerCount || 0}</p>
-            <p className="text-gray-500 text-sm">Followers</p>
-          </div>
-          <div className="text-center">
-            <p className="font-bold text-lg">{profile.followingCount || 0}</p>
-            <p className="text-gray-500 text-sm">Following</p>
-          </div>
-          <div className="text-center">
-            <p className="font-bold text-lg">0</p>
-            <p className="text-gray-500 text-sm">Posts</p>
-          </div>
-        </div>
-        
-        {/* Posts section - this would be populated with the user's posts */}
-        <div className="mt-6">
-          <h3 className="font-medium text-gray-800 mb-2">Posts</h3>
-          <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-            <p className="text-gray-500">No posts yet</p>
-          </div>
-        </div>
       </div>
       
       {/* Edit Profile Modal */}

@@ -26,12 +26,12 @@ export const searchUsers = async (searchTerm: string): Promise<User[]> => {
 };
 
 // Follow a user - delegating to UserService
-export const followUser = async (followerId: string, followingId: string): Promise<void> => {
+export const followUser = async (followerId: string, followingId: string): Promise<boolean> => {
   try {
-    await UserService.followUser(followerId, followingId);
+    return await UserService.followUser(followerId, followingId);
   } catch (error) {
     console.error("Error following user:", error);
-    throw error;
+    return false;
   }
 };
 

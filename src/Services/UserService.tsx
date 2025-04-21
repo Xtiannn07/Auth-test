@@ -21,9 +21,10 @@ export interface UserProfile {
   email: string;
   photoURL?: string;
   bio?: string;
-  // Arrays to store followers and following directly in the user document
-  followers: Array<{uid: string, username: string}>;
-  following: Array<{uid: string, username: string}>;
+  // Maps to store followers and following directly in the user document
+  // Key is the user's UID, value contains username for displaying
+  followers: Record<string, {username: string}>;
+  following: Record<string, {username: string}>;
   // Keep counts for quick access
   followerCount: number;
   followingCount: number;
@@ -47,8 +48,8 @@ export class UserService {
         email: profileData.email || '',
         photoURL: profileData.photoURL || '',
         bio: profileData.bio || '',
-        followers: [], // Initialize empty followers array
-        following: [], // Initialize empty following array
+        followers: {}, // Initialize empty followers map
+        following: {}, // Initialize empty following map
         followerCount: 0,
         followingCount: 0,
         createdAt: typeof profileData.createdAt === 'string' 
@@ -133,8 +134,8 @@ export class UserService {
         await this.setUsernameMapping(updates.username, uid);
         
         // If username is updated, we need to update all follower/following references
-        if (currentProfile.followers?.length > 0) {
-          await this.updateFollowerReferences(currentProfile.followers.map(f => f.uid), 
+        if (currentProfile.followers && Object.keys(currentProfile.followers).length > 0) {
+          await this.updateFollowerReferences(Object.keys(currentProfile.followers), 
                                               uid, 
                                               updates.username);
         }
@@ -170,17 +171,17 @@ export class UserService {
         
         if (followerSnap.exists()) {
           const followerData = followerSnap.data() as UserProfile;
-          const following = followerData.following || [];
+          const following = followerData.following || {};
           
-          // Find and update the username in the following array
-          const updatedFollowing = following.map(f => {
-            if (f.uid === targetUid) {
-              return { ...f, username: newUsername };
-            }
-            return f;
-          });
-          
-          await updateDoc(followerRef, { following: updatedFollowing });
+          // Update the username in the following map
+          if (following[targetUid]) {
+            const updatedFollowing = { 
+              ...following,
+              [targetUid]: { username: newUsername }
+            };
+            
+            await updateDoc(followerRef, { following: updatedFollowing });
+          }
         }
       }
     } catch (error) {
@@ -293,30 +294,30 @@ export class UserService {
       
       // Transaction to ensure both updates happen atomically
       await runTransaction(db, async (transaction) => {
-        // Add target user to current user's following list
-        const currentUserFollowing = currentUser.following || [];
-        if (!currentUserFollowing.some(f => f.uid === targetUserUid)) {
-          currentUserFollowing.push({
-            uid: targetUserUid,
-            username: targetUser.username
-          });
+        // Add target user to current user's following map
+        const currentUserFollowing = currentUser.following || {};
+        if (!currentUserFollowing[targetUserUid]) {
+          const updatedFollowing = { 
+            ...currentUserFollowing,
+            [targetUserUid]: { username: targetUser.username }
+          };
           
           transaction.update(currentUserRef, {
-            following: currentUserFollowing,
+            following: updatedFollowing,
             followingCount: increment(1)
           });
         }
         
-        // Add current user to target user's followers list
-        const targetUserFollowers = targetUser.followers || [];
-        if (!targetUserFollowers.some(f => f.uid === currentUserUid)) {
-          targetUserFollowers.push({
-            uid: currentUserUid,
-            username: currentUser.username
-          });
+        // Add current user to target user's followers map
+        const targetUserFollowers = targetUser.followers || {};
+        if (!targetUserFollowers[currentUserUid]) {
+          const updatedFollowers = { 
+            ...targetUserFollowers,
+            [currentUserUid]: { username: currentUser.username }
+          };
           
           transaction.update(targetUserRef, {
-            followers: targetUserFollowers,
+            followers: updatedFollowers,
             followerCount: increment(1)
           });
         }
@@ -401,22 +402,26 @@ export class UserService {
       }
       const targetUser = targetUserSnap.data() as UserProfile;
       
-      // Remove target user from current user's following list
-      const currentUserFollowing = currentUser.following || [];
-      const updatedFollowing = currentUserFollowing.filter(f => f.uid !== targetUserUid);
+      // Remove target user from current user's following map
+      const currentUserFollowing = currentUser.following || {};
       
-      if (updatedFollowing.length !== currentUserFollowing.length) {
+      if (currentUserFollowing[targetUserUid]) {
+        const updatedFollowing = { ...currentUserFollowing };
+        delete updatedFollowing[targetUserUid];
+        
         await updateDoc(currentUserRef, {
           following: updatedFollowing,
           followingCount: increment(-1)
         });
       }
       
-      // Remove current user from target user's followers list
-      const targetUserFollowers = targetUser.followers || [];
-      const updatedFollowers = targetUserFollowers.filter(f => f.uid !== currentUserUid);
+      // Remove current user from target user's followers map
+      const targetUserFollowers = targetUser.followers || {};
       
-      if (updatedFollowers.length !== targetUserFollowers.length) {
+      if (targetUserFollowers[currentUserUid]) {
+        const updatedFollowers = { ...targetUserFollowers };
+        delete updatedFollowers[currentUserUid];
+        
         await updateDoc(targetUserRef, {
           followers: updatedFollowers,
           followerCount: increment(-1)
@@ -437,9 +442,9 @@ export class UserService {
       if (!currentUserSnap.exists()) return false;
       
       const currentUser = currentUserSnap.data() as UserProfile;
-      const following = currentUser.following || [];
+      const following = currentUser.following || {};
       
-      return following.some(f => f.uid === targetUserUid);
+      return !!following[targetUserUid];
     } catch (error) {
       console.error('Error checking following status:', error);
       throw error;
@@ -458,10 +463,10 @@ export class UserService {
       }
       
       const currentUser = currentUserSnap.data() as UserProfile;
-      const followingList = currentUser.following || [];
+      const following = currentUser.following || {};
       
-      // Extract UIDs from following list
-      const followingUids = followingList.map(f => f.uid);
+      // Extract UIDs from following map
+      const followingUids = Object.keys(following);
       
       // Add the current user to the exclusion list
       const excludeUsers = [...followingUids, uid];

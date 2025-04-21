@@ -13,9 +13,14 @@ service cloud.firestore {
       allow read: if true;
       allow create: if request.auth != null && 
                    request.auth.uid == userId;
+      // Allow users to update their own profile
       allow update: if request.auth != null && 
                     request.auth.uid == userId &&
                     onlyUpdatesAllowedFields(request.resource.data, resource.data);
+      // Allow users to update followers/following lists for follow functionality
+      allow update: if request.auth != null && 
+                    onlyUpdatesFollowData(request.resource.data, resource.data) &&
+                    isValidFollowOperation(request.resource.data, resource.data, request.auth.uid);
       
       // User's posts subcollection
       match /posts/{postId} {
@@ -53,37 +58,28 @@ service cloud.firestore {
                    validLikeOperation(request.resource.data.likes, resource.data.likes);
       allow delete: if isPostAuthor();
     }
+
     // ==================== HELPER FUNCTIONS ====================
-    function isUserOwner(userId) {
-      return request.auth != null && request.auth.uid == userId;
-    }
-
-    function validUserDocument(data) {
-      return data.keys().hasOnly([
-        "displayName",
-        "username",
-        "bio",
-        "website",
-        "avatarUrl",
-        "createdAt"
-      ]) && data.username is string &&
-           data.displayName is string &&
-           (data.bio == null || data.bio is string) &&
-           (data.website == null || data.website is string) &&
-           (data.avatarUrl == null || data.avatarUrl is string);
-    }
-
     function onlyUpdatesAllowedFields(newData, oldData) {
       return newData.diff(oldData).affectedKeys().hasOnly([
         "displayName",
         "bio",
         "website",
-        "avatarUrl"
+        "avatarUrl",
+        "followers",
+        "following",
+        "followerCount",
+        "followingCount"
       ]);
     }
 
     function isPostAuthor() {
-      return request.auth != null && 
+      return resource != null && 
+             resource.data != null &&
+             resource.data.author != null &&
+             resource.data.author.id != null &&
+             request != null &&
+             request.auth != null && 
              request.auth.uid == resource.data.author.id;
     }
 
@@ -119,6 +115,40 @@ service cloud.firestore {
       // Ensure only one like change at a time
       return newLikes.size() == oldLikes.size() + 1 ||
              newLikes.size() == oldLikes.size() - 1;
+    }
+
+    // Function to check if only follower/following data is being modified
+    function onlyUpdatesFollowData(newData, oldData) {
+      return newData.diff(oldData).affectedKeys().hasOnly([
+        "followers",
+        "following",
+        "followerCount",
+        "followingCount"
+      ]);
+    }
+    
+    // Function to validate that the follow operation is legitimate
+    function isValidFollowOperation(newData, oldData, authUid) {
+      // Case 1: User is updating their own document to add/remove someone from their following list
+      let isUpdatingOwnDocument = request.auth.uid == resource.id;
+      let isUpdatingFollowing = newData.following != null && oldData.following != null && 
+                              (newData.diff(oldData).affectedKeys().hasOnly(['following', 'followingCount']));
+      
+      // Case 2: User is updating someone else's document to add/remove themselves from followers list
+      let isUpdatingSomeoneElsesDocument = request.auth.uid != resource.id;
+      let hasFollowersData = newData.followers != null && oldData.followers != null;
+      let isUpdatingFollowers = hasFollowersData && 
+                              (newData.diff(oldData).affectedKeys().hasOnly(['followers', 'followerCount']));
+      let isAddingOrRemovingSelf = (
+        // Adding follower
+        (newData.followers[authUid] != null && oldData.followers[authUid] == null) ||
+        // Removing follower
+        (newData.followers[authUid] == null && oldData.followers[authUid] != null)
+      );
+      
+      // Return true if either case is valid
+      return (isUpdatingOwnDocument && isUpdatingFollowing) || 
+             (isUpdatingSomeoneElsesDocument && isUpdatingFollowers && isAddingOrRemovingSelf);
     }
 
     // ==================== DEFAULT DENY ====================

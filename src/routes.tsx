@@ -12,6 +12,7 @@ const HomePage = lazy(() => import('./Pages/Home/Home'));
 const SearchPage = lazy(() => import('./Pages/Search/Search'));
 const PostPage = lazy(() => import('./Pages/Post/Post'));
 const ProfilePage = lazy(() => import('./Pages/Profile/Profile'));
+const UserProfilePage = lazy(() => import('./Pages/SearchComponents/UserProfile'));
 
 const LazyRoute = ({ component: Component }: { component: React.ComponentType }) => (
   <Suspense fallback={<div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>}>
@@ -86,11 +87,21 @@ const routes = [
     ),
   },
   {
-    path: '/profile/:username', // Dynamic route for user profiles
+    path: '/profile', // Route for current user's profile
     element: (
       <PrivateRoute>
         <AuthenticatedRouteWrapper>
           <LazyRoute component={ProfilePage} />
+        </AuthenticatedRouteWrapper>
+      </PrivateRoute>
+    ),
+  },
+  {
+    path: '/user/:userId', // Dynamic route for viewing other users' profiles
+    element: (
+      <PrivateRoute>
+        <AuthenticatedRouteWrapper>
+          <LazyRoute component={UserProfilePage} />
         </AuthenticatedRouteWrapper>
       </PrivateRoute>
     ),
