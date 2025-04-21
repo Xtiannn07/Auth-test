@@ -110,13 +110,13 @@ export default function ProfilePage() {
         <h2 className="text-xl font-semibold mb-4 flex items-center">
           <span className="mr-2">Posts</span>
           <span className="text-sm font-normal text-gray-500">
-            {currentUser && <span>(Your content)</span>}
+            {currentUser && <span>(Your content and followed users)</span>}
           </span>
         </h2>
         
-        {/* Use the new UserPosts component */}
+        {/* Use the UserPosts component with includeFollowing set to true */}
         {currentUser && (
-          <UserPosts userId={currentUser.uid} />
+          <UserPosts userId={currentUser.uid} includeFollowing={true} />
         )}
       </div>
       

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
 import { UserService, UserProfile } from '../../Services/UserService';
+import UserPosts from '../Profile/ProfileComponents/UserPosts';
 import { Loader } from 'lucide-react';
 
 export default function UserProfilePage() {
@@ -161,12 +162,10 @@ export default function UserProfilePage() {
         </div>
       )}
       
-      {/* Posts section */}
+      {/* Posts section - Use UserPosts component */}
       <div className="mt-4 p-4">
         <h2 className="text-xl font-semibold mb-4">Posts</h2>
-        <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-          <p className="text-gray-500">No posts yet</p>
-        </div>
+        {userId && <UserPosts userId={userId} includeFollowing={false} />}
       </div>
     </div>
   );

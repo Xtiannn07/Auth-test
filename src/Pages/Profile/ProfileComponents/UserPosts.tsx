@@ -1,51 +1,76 @@
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../../store/store';
 import { PostService } from '../../../Services/PostService';
+import PostCard from '../../../Pages/PostComponents/PostCard';
 import { Loader } from 'lucide-react';
 
+// Define post interface matching PostCard requirements
 interface Post {
   id: string;
   title: string;
   content: string;
-  createdAt: string;
-  likes: number;
-  userId: string;
-  username: string;
-  userPhotoURL?: string;
-  imageURL?: string;
+  author: {
+    id: string;
+    name: string;
+  };
+  createdAt: any;
+  likes: string[];
+  savedBy?: string[];
+  reposts?: number;
+  comments?: any[];
 }
 
 interface UserPostsProps {
   userId: string;
+  includeFollowing?: boolean; // Prop to include posts from followed users
 }
 
-const UserPosts: React.FC<UserPostsProps> = ({ userId }) => {
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchUserPosts = async () => {
-      if (!userId) return;
+const UserPosts: React.FC<UserPostsProps> = ({ userId, includeFollowing = false }) => {
+  // Get current user from Redux store
+  const currentUser = useSelector((state: RootState) => state.auth.currentUser);
+  
+  // Use React Query for better cache management and automatic refreshing
+  const {
+    data: posts,
+    isLoading: loading,
+    error: queryError,
+    refetch
+  } = useQuery<Post[]>({
+    queryKey: ['user-posts', userId, includeFollowing],
+    queryFn: async () => {
+      if (!userId) return [];
       
       try {
-        setLoading(true);
-        setError(null);
+        // Fetch posts based on whether to include followed users or not
+        const filter = includeFollowing ? 'following' : 'latest';
+        const fetchedPosts = await PostService.fetchPosts(filter, userId);
         
-        // Custom query to get only this user's posts
-        const fetchedPosts = await PostService.fetchPosts('latest', userId);
-        const userPosts = fetchedPosts.filter((post: any) => post.userId === userId);
+        // If we're not including followed users, only show the user's posts
+        // Fixed: Make sure we properly filter by author.id while handling types
+        let userPosts;
+        if (includeFollowing) {
+          userPosts = fetchedPosts;
+        } else {
+          // Use type assertion to handle the actual post structure from Firebase
+          userPosts = fetchedPosts.filter((post: any) => 
+            post.author && post.author.id === userId
+          );
+        }
         
-        setPosts(userPosts as Post[]);
+        // Ensure we cast the result to our Post interface for proper typing
+        return userPosts as Post[];
       } catch (err) {
         console.error('Error fetching user posts:', err);
-        setError('Failed to load posts');
-      } finally {
-        setLoading(false);
+        throw new Error('Failed to load posts');
       }
-    };
-
-    fetchUserPosts();
-  }, [userId]);
+    },
+    staleTime: 30 * 1000, // Consider data stale after 30 seconds
+    refetchOnWindowFocus: true, // Refetch when window regains focus
+    enabled: !!userId
+  });
+  
+  const error = queryError ? (queryError as Error).message : null;
 
   if (loading) {
     return (
@@ -63,7 +88,7 @@ const UserPosts: React.FC<UserPostsProps> = ({ userId }) => {
     );
   }
 
-  if (posts.length === 0) {
+  if (!posts || posts.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow-sm p-8 text-center">
         <p className="text-gray-500">No posts yet</p>
@@ -72,41 +97,17 @@ const UserPosts: React.FC<UserPostsProps> = ({ userId }) => {
   }
 
   return (
-    <div className="grid grid-cols-3 gap-1">
-      {posts.map((post) => (
-        <div 
-          key={post.id} 
-          className="aspect-square bg-gray-100 overflow-hidden relative"
-        >
-          {post.imageURL ? (
-            <img 
-              src={post.imageURL} 
-              alt={post.title || 'Post image'} 
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="flex items-center justify-center h-full bg-gray-200">
-              <p className="text-gray-500 p-4 text-sm line-clamp-4">{post.content}</p>
-            </div>
-          )}
-          <div className="absolute bottom-2 left-2 flex items-center text-white text-xs">
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              className="h-4 w-4 mr-1" 
-              fill="white" 
-              viewBox="0 0 24 24" 
-              stroke="currentColor"
-            >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={2} 
-                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" 
-              />
-            </svg>
-            {post.likes || 0}
-          </div>
-        </div>
+    <div className="space-y-4">
+      {posts.map((post, index) => (
+        <PostCard
+          key={post.id}
+          post={post}
+          currentUser={currentUser}
+          showFullContent={false}
+          maxContentLength={200}
+          customAnimation={{ delay: index * 0.1 }}
+          onDeletePost={() => refetch()}
+        />
       ))}
     </div>
   );
