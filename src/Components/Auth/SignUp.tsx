@@ -1,7 +1,7 @@
 import { useState, FormEvent, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { signUpUser, clearAuthError } from '../../store/authSlice';
+import { signUpUser, clearAuthError, signOutUser } from '../../store/authSlice';
 import { RootState, AppDispatch } from '../../store/store';
 import { UserService } from '../../Services/UserService';
 import { useProfile } from '../../Contexts/ProfileContext';
@@ -17,12 +17,74 @@ export default function SignUp() {
   const [username, setUsername] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [usernameError, setUsernameError] = useState('');
+  const [statusMessage, setStatusMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingProfileData, setPendingProfileData] = useState<any>(null);
   
   const dispatch = useDispatch<AppDispatch>();
   const { error, loading, currentUser } = useSelector((state: RootState) => state.auth);
   const { createProfile, loading: profileLoading } = useProfile();
   const navigate = useNavigate();
+
+  // Check if user is already logged in
+  useEffect(() => {
+    if (currentUser && !isSubmitting) {
+      navigate('/home');
+    }
+  }, [currentUser, navigate, isSubmitting]);
+
+  // Effect to handle profile creation after authentication
+  useEffect(() => {
+    const createUserProfile = async () => {
+      if (currentUser && pendingProfileData) {
+        try {
+          setStatusMessage('Setting up your profile...');
+          
+          // Add the uid from currentUser to the profile data
+          const profileData = {
+            ...pendingProfileData,
+            uid: currentUser.uid,
+            email: currentUser.email || email
+          };
+          
+          await createProfile(profileData);
+          
+          // Verify profile creation
+          setStatusMessage('Verifying account setup...');
+          let profileExists = await verifyProfileCreation(currentUser.uid);
+          
+          // If profile doesn't exist, try one more time with simplified data
+          if (!profileExists) {
+            profileExists = await retryProfileCreation(currentUser.uid);
+          }
+          
+          if (profileExists) {
+            setStatusMessage('Account created successfully! Redirecting...');
+            // Small delay to ensure data is propagated
+            setTimeout(() => {
+              navigate('/home');
+            }, 500);
+          } else {
+            setStatusMessage('');
+            dispatch({ type: 'auth/setError', payload: "We couldn't complete your profile setup. Please try again." });
+            // Clean up the auth user if profile creation failed completely
+            await cleanupAuthUser();
+          }
+        } catch (err: any) {
+          console.error('Profile creation failed:', err);
+          const errorMessage = err.message || 'Failed to create user profile';
+          dispatch({ type: 'auth/setError', payload: errorMessage });
+          // Clean up the auth user if profile creation failed
+          await cleanupAuthUser();
+        } finally {
+          setPendingProfileData(null);
+          setIsSubmitting(false);
+        }
+      }
+    };
+    
+    createUserProfile();
+  }, [currentUser, pendingProfileData, createProfile, dispatch, navigate, email]);
 
   const generateUsername = (value: string): string => {
     if (!value) return '';
@@ -71,11 +133,57 @@ export default function SignUp() {
     }
   };
 
+  // Function to verify the profile was created in Firestore
+  const verifyProfileCreation = async (uid: string): Promise<boolean> => {
+    try {
+      await UserService.getUserProfile(uid);
+      return true;
+    } catch (err) {
+      console.error('Profile verification failed:', err);
+      return false;
+    }
+  };
+
+  // Function to clean up auth user if profile creation fails
+  const cleanupAuthUser = async () => {
+    try {
+      await dispatch(signOutUser());
+      console.log('Cleaned up auth user after failed profile creation');
+    } catch (err) {
+      console.error('Error during auth cleanup:', err);
+    }
+  };
+
+  // Function to retry profile creation with simplified data
+  const retryProfileCreation = async (uid: string): Promise<boolean> => {
+    try {
+      setStatusMessage('Retrying profile creation...');
+      
+      const minimalProfile = {
+        uid: uid,
+        displayName: displayName || email.split('@')[0],
+        username: username || `user_${uid.substring(0, 8)}`,
+        email: email,
+        photoURL: '',
+        bio: '',
+        followerCount: 0,
+        followingCount: 0
+      };
+      
+      await UserService.createUserProfile(uid, minimalProfile);
+      return true;
+    } catch (err) {
+      console.error('Retry profile creation failed:', err);
+      return false;
+    }
+  };
+
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     
     setPasswordError('');
     setUsernameError('');
+    setStatusMessage('');
     dispatch(clearAuthError());
     
     if (password !== confirmPassword) {
@@ -89,40 +197,30 @@ export default function SignUp() {
     setIsSubmitting(true);
     
     try {
-      // 1. Create auth user
-      const result = await dispatch(signUpUser({ 
+      // Step 1: Create auth user
+      setStatusMessage('Creating account...');
+      const authResult = await dispatch(signUpUser({ 
         email, 
         password, 
         displayName 
       }));
       
-      if (signUpUser.fulfilled.match(result)) {
-        const user = result.payload;
+      if (signUpUser.fulfilled.match(authResult)) {
+        const user = authResult.payload;
         
-        try {
-          // 2. Create user profile
-          const profile = await createProfile({
-            uid: user.uid,
-            displayName,
-            username,
-            email: user.email || email,
-            photoURL: user.photoURL || '',
-            followerCount: 0,
-            followingCount: 0
-          });
-          
-          console.log('Profile created:', profile);
-          navigate('/home');
-        } catch (profileErr: any) {
-          console.error('Profile creation failed:', profileErr);
-          // Show specific error for profile creation
-          const errorMessage = profileErr.message || 'Failed to create user profile';
-          dispatch({ type: 'auth/setError', payload: errorMessage });
-        }
+        // Instead of immediately creating the profile, store the data
+        // and let the useEffect handle profile creation once currentUser is available
+        setPendingProfileData({
+          displayName,
+          username,
+          photoURL: user.photoURL || '',
+          followerCount: 0,
+          followingCount: 0
+        });
       }
     } catch (err) {
       console.error('Signup failed:', err);
-    } finally {
+      setStatusMessage('');
       setIsSubmitting(false);
     }
   }
@@ -152,6 +250,12 @@ export default function SignUp() {
             </div>
           )}
           
+          {statusMessage && !combinedError && (
+            <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-4" role="alert">
+              <span className="block sm:inline">{statusMessage}</span>
+            </div>
+          )}
+          
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
               <Input
@@ -162,6 +266,7 @@ export default function SignUp() {
                 value={displayName}
                 onChange={handleDisplayNameChange}
                 className="w-full px-3 py-3 border bg-gray-100 border-gray-300 rounded-xl"
+                disabled={isLoading}
               />
             </div>
             
@@ -176,6 +281,7 @@ export default function SignUp() {
                 onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
                 onBlur={checkUsernameAvailability}
                 className="w-full px-3 py-3 border bg-gray-100 border-gray-300 rounded-xl"
+                disabled={isLoading}
               />
               {usernameError && <p className="text-red-500 text-xs mt-1">{usernameError}</p>}
               <p className="text-gray-500 text-xs mt-1">
@@ -193,6 +299,7 @@ export default function SignUp() {
                 value={email}
                 onChange={handleEmailChange}
                 className="w-full px-3 py-3 border bg-gray-100 border-gray-300 rounded-xl"
+                disabled={isLoading}
               />
             </div>
             
@@ -206,6 +313,7 @@ export default function SignUp() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-3 py-3 border bg-gray-100 border-gray-300 rounded-xl"
+                disabled={isLoading}
               />
             </div>
             
@@ -219,6 +327,7 @@ export default function SignUp() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 className="w-full px-3 py-3 border bg-gray-100 border-gray-300 rounded-xl"
+                disabled={isLoading}
               />
             </div>
             

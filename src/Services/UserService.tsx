@@ -48,7 +48,9 @@ export class UserService {
         bio: profileData.bio || '',
         followerCount: profileData.followerCount || 0,
         followingCount: profileData.followingCount || 0,
-        createdAt: profileData.createdAt || new Date().toISOString()
+        createdAt: typeof profileData.createdAt === 'string' 
+          ? profileData.createdAt 
+          : new Date().toISOString()
       };
       
       // Set the document in Firestore

@@ -93,7 +93,7 @@ export function ProfileProvider({ children }: ProfileProviderProps) {
     }
   };
 
-  // Function to create a new profile
+  // Function to create a new profile with better error handling
   const createProfile = async (profileData: Partial<UserProfile>): Promise<UserProfile> => {
     if (!currentUser) {
       throw new Error('User must be logged in to create a profile');
@@ -120,46 +120,53 @@ export function ProfileProvider({ children }: ProfileProviderProps) {
         console.log('No existing profile found, creating new one');
       }
       
-      // Create the profile but catch specific errors
-      let profile;
-      try {
-        // Prepare complete profile data
-        const completeProfileData = {
-          uid,
-          displayName: profileData.displayName || currentUser.displayName || '',
-          username: profileData.username || '',
-          email: profileData.email || currentUser.email || '',
-          photoURL: profileData.photoURL || currentUser.photoURL || '',
-          bio: profileData.bio || '',
-          followerCount: profileData.followerCount || 0,
-          followingCount: profileData.followingCount || 0,
-          createdAt: new Date().toISOString()
-        };
-        
-        console.log('Creating new user profile with data:', completeProfileData);
-        profile = await UserService.createUserProfile(uid, completeProfileData);
-      } catch (err: any) {
-        console.error('Error in profile creation. Creating minimal profile');
-        // Create a minimal profile if main creation fails
-        profile = {
-          uid,
-          displayName: profileData.displayName || currentUser.displayName || '',
-          username: profileData.username || `user_${uid.substring(0, 8)}`,
-          email: profileData.email || currentUser.email || '',
-          photoURL: profileData.photoURL || currentUser.photoURL || '',
-          bio: '',
-          followerCount: 0,
-          followingCount: 0,
-          createdAt: new Date().toISOString()
-        };
-        
-        // Try to create just the basic profile
-        await UserService.createUserProfile(uid, profile);
-      }
+      // Create complete profile data with defaults for missing fields
+      const completeProfileData = {
+        uid,
+        displayName: profileData.displayName || currentUser.displayName || '',
+        username: profileData.username || `user_${uid.substring(0, 8)}`,
+        email: profileData.email || currentUser.email || '',
+        photoURL: profileData.photoURL || currentUser.photoURL || '',
+        bio: profileData.bio || '',
+        followerCount: profileData.followerCount || 0,
+        followingCount: profileData.followingCount || 0,
+        createdAt: new Date().toISOString()
+      };
       
-      console.log('Profile created successfully:', profile);
-      setUserProfile(profile);
-      return profile;
+      console.log('Creating new user profile with data:', completeProfileData);
+      
+      // Enhanced error handling and retry logic
+      try {
+        // First attempt with full data
+        const profile = await UserService.createUserProfile(uid, completeProfileData);
+        console.log('Profile created successfully:', profile);
+        setUserProfile(profile);
+        return profile;
+      } catch (initialError) {
+        console.error('Error in profile creation. Detailed error:', initialError);
+        
+        // On failure, try with just the required fields
+        try {
+          console.log('Attempting with minimal profile data');
+          const minimalProfile = {
+            uid,
+            displayName: completeProfileData.displayName,
+            username: completeProfileData.username,
+            email: completeProfileData.email,
+            followerCount: 0,
+            followingCount: 0,
+            createdAt: new Date().toISOString()
+          };
+          
+          const profile = await UserService.createUserProfile(uid, minimalProfile);
+          console.log('Minimal profile created successfully:', profile);
+          setUserProfile(profile);
+          return profile;
+        } catch (retryError: any) {
+          console.error('Both profile creation attempts failed:', retryError);
+          throw new Error(`Failed to create user profile: ${retryError.message || 'Unknown error'}`);
+        }
+      }
     } catch (err: any) {
       console.error('Error creating profile:', err);
       setError('Failed to create profile: ' + (err.message || ''));

@@ -5,25 +5,14 @@ service cloud.firestore {
     match /usernames/{username} {
       allow get: if true;
       allow create, update, delete: if request.auth != null && 
-                                   request.auth.uid == resource.data.uid;
+                                   request.auth.uid == request.resource.data.uid;
     }
 
     // ==================== USERS COLLECTION ====================
     match /users/{userId} {
       allow read: if true;
       allow create: if request.auth != null && 
-                   request.auth.uid == userId &&
-                   request.resource.data.keys().hasOnly([
-                     "uid",
-                     "displayName",
-                     "username",
-                     "email",
-                     "photoURL",
-                     "bio",
-                     "followerCount",
-                     "followingCount",
-                     "createdAt"
-                   ]);
+                   request.auth.uid == userId;
       allow update: if request.auth != null && 
                     request.auth.uid == userId &&
                     onlyUpdatesAllowedFields(request.resource.data, resource.data);
@@ -35,18 +24,19 @@ service cloud.firestore {
                       request.auth.uid == userId &&
                       validPostDocument(request.resource.data);
       }
-      
-      // Followers subcollection
-      match /followers/{followerId} {
-        allow read: if true;
-        allow write: if false; // Handle via Cloud Function
-      }
-      
-      // Following subcollection
-      match /following/{followedId} {
-        allow read: if true;
-        allow write: if false; // Handle via Cloud Function
-      }
+    }
+
+    // ==================== FOLLOWING COLLECTION ====================
+    match /following/{userId} {
+      allow read: if true;
+      allow create, update: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // ==================== FOLLOWERS COLLECTION ====================
+    match /followers/{userId} {
+      allow read: if true;
+      // Allow the user to manage their followers list
+      allow create, update: if request.auth != null;
     }
 
     // ==================== POSTS COLLECTION ====================
