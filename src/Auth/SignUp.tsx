@@ -1,12 +1,12 @@
 import { useState, FormEvent, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { signUpUser, clearAuthError, signOutUser } from '../../store/authSlice';
-import { RootState, AppDispatch } from '../../store/store';
-import { UserService } from '../../Services/UserService';
-import { useProfile } from '../../Contexts/ProfileContext';
-import Input from '../UI/Input';
-import Button from '../UI/Button';
+import { signUpUser, clearAuthError, signOutUser } from '../store/authSlice';
+import { RootState, AppDispatch } from '../store/store';
+import { UserService } from '../Services/UserService';
+import { useProfile } from '../Contexts/ProfileContext';
+import Input from '../Components/UI/Input';
+import Button from '../Components/UI/Button';
 import SignInFooter from './Footer';
 
 export default function SignUp() {

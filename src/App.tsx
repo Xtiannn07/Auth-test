@@ -4,7 +4,7 @@ import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from
 import { useQueryClient } from '@tanstack/react-query';
 import { Provider } from 'react-redux';
 import store from './store/store';
-import AuthStateListener from './Components/Auth/AuthStateListener';
+import AuthStateListener from './Auth/AuthStateListener';
 import routes from './routes';
 
 function AppContent() {

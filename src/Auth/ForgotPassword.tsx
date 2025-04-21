@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { resetUserPassword } from '../../store/authSlice';
-import Input from '../UI/Input';
-import Button from '../UI/Button';
+import { resetUserPassword } from '../store/authSlice';
+import Input from '../Components/UI/Input';
+import Button from '../Components/UI/Button';
 import SignInFooter from './Footer';
 
 export default function ForgotPassword() {

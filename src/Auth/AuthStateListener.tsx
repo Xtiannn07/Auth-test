@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../../Services/Firebase';
-import { setCurrentUser, clearCurrentUser } from '../../store/authSlice';
+import { auth } from '../Services/Firebase';
+import { setCurrentUser, clearCurrentUser } from '../store/authSlice';
 
 /**
  * AuthStateListener component

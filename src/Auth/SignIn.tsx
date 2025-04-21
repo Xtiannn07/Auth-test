@@ -1,10 +1,10 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { signInUser, clearAuthError } from '../../store/authSlice';
-import { RootState, AppDispatch } from '../../store/store';
-import Input from '../UI/Input';
-import Button from '../UI/Button';
+import { signInUser, clearAuthError } from '../store/authSlice';
+import { RootState, AppDispatch } from '../store/store';
+import Input from '../Components/UI/Input';
+import Button from '../Components/UI/Button';
 import SignInFooter from './Footer';
 
 

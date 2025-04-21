@@ -3,11 +3,11 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { RootState } from './store/store';
 import AuthenticatedLayout from './Pages/Layout';
-import PrivateRoute from './Components/Auth/PrivateRoute';
+import PrivateRoute from './Auth/PrivateRoute';
 
-const SignIn = lazy(() => import('./Components/Auth/SignIn'));
-const SignUp = lazy(() => import('./Components/Auth/SignUp'));
-const ForgotPassword = lazy(() => import('./Components/Auth/ForgotPassword'));
+const SignIn = lazy(() => import('./Auth/SignIn'));
+const SignUp = lazy(() => import('./Auth/SignUp'));
+const ForgotPassword = lazy(() => import('./Auth/ForgotPassword'));
 const HomePage = lazy(() => import('./Pages/Home/Home'));
 const SearchPage = lazy(() => import('./Pages/Search/Search'));
 const PostPage = lazy(() => import('./Pages/Post/Post'));
