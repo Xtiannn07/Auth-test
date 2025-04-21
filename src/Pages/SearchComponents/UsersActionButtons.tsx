@@ -1,13 +1,16 @@
+// src/Components/UsersActionButtons.tsx
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { UserMinus, UserPlus, X } from 'lucide-react';
-import { removeUserSuggestion } from './SearchApi';
-import { UserService } from './../../Services/UserService'; // Import UserService
-import { useDispatch, useSelector } from 'react-redux';
+import { followUser, removeUserSuggestion } from './SearchApi';
+import { useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
+import Notification from '../../Components/UI/Notifications';
 
 interface UsersActionButtonsProps {
   userId: string;
+  username?: string;
+  displayName?: string;
   isFollowing?: boolean;
   isLoading?: boolean;
   onFollowStatusChange?: (isFollowing: boolean) => void;
@@ -16,6 +19,8 @@ interface UsersActionButtonsProps {
 
 const UsersActionButtons: React.FC<UsersActionButtonsProps> = ({ 
   userId, 
+  username = '',
+  displayName = '',
   isFollowing = false,
   isLoading: isCheckingStatus = false,
   onFollowStatusChange,
@@ -24,6 +29,7 @@ const UsersActionButtons: React.FC<UsersActionButtonsProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isSliding, setIsSliding] = useState(false);
   const [currentIsFollowing, setCurrentIsFollowing] = useState(isFollowing);
+  const [notification, setNotification] = useState<{type: 'success' | 'error', message: string} | null>(null);
   const currentUser = useSelector((state: RootState) => state.auth.currentUser);
   const queryClient = useQueryClient();
 
@@ -32,17 +38,30 @@ const UsersActionButtons: React.FC<UsersActionButtonsProps> = ({
     
     setIsLoading(true);
     try {
-      // Use UserService instead of SearchPageService
-      await UserService.followUser(currentUser.uid, userId);
-      setCurrentIsFollowing(true);
-      if (onFollowStatusChange) {
-        onFollowStatusChange(true);
+      // Follow the user
+      const success = await followUser(currentUser.uid, userId);
+      
+      if (success) {
+        setCurrentIsFollowing(true);
+        const displayText = displayName || username || 'user';
+        setNotification({ type: 'success', message: `You are now following ${displayText}` });
+        
+        // Notify parent component if callback exists
+        if (onFollowStatusChange) {
+          onFollowStatusChange(true);
+        }
+        
+        // Invalidate queries that might contain user lists
+        queryClient.invalidateQueries({ queryKey: ['users'] });
+        queryClient.invalidateQueries({ queryKey: ['userSuggestions'] });
+        queryClient.invalidateQueries({ queryKey: ['user', currentUser.uid] });
+        queryClient.invalidateQueries({ queryKey: ['user', userId] });
+      } else {
+        setNotification({ type: 'error', message: 'Failed to follow user. Please try again.' });
       }
-      // Invalidate queries that might contain user lists
-      queryClient.invalidateQueries({ queryKey: ['users'] });
-      queryClient.invalidateQueries({ queryKey: ['userSuggestions'] });
     } catch (error) {
       console.error('Error following user:', error);
+      setNotification({ type: 'error', message: 'An error occurred while following user' });
     } finally {
       setIsLoading(false);
     }
@@ -59,6 +78,7 @@ const UsersActionButtons: React.FC<UsersActionButtonsProps> = ({
         await removeUserSuggestion(userId, currentUser.uid);
         // Invalidate queries to refresh user lists
         queryClient.invalidateQueries({ queryKey: ['users'] });
+        queryClient.invalidateQueries({ queryKey: ['userSuggestions'] });
         
         if (onRemove) {
           onRemove();
@@ -66,6 +86,7 @@ const UsersActionButtons: React.FC<UsersActionButtonsProps> = ({
       } catch (error) {
         console.error('Error removing user suggestion:', error);
         setIsSliding(false); // Reset if there's an error
+        setNotification({ type: 'error', message: 'Failed to remove suggestion' });
       }
     }, 300);
   };
@@ -79,34 +100,44 @@ const UsersActionButtons: React.FC<UsersActionButtonsProps> = ({
   }
 
   return (
-    <div className="flex space-x-2">
-      <button
-        onClick={handleFollow}
-        disabled={isLoading || isCheckingStatus || currentIsFollowing}
-        className={`px-3 py-1 rounded-full text-sm font-medium flex items-center
-          ${currentIsFollowing 
-            ? 'border border-gray-300 text-gray-700' 
-            : 'bg-blue-500 text-white hover:bg-blue-600'}
-          ${(isLoading || isCheckingStatus) ? 'opacity-75' : ''}
-          transition-all duration-200`}
-        aria-label={currentIsFollowing ? "Following" : "Follow"}
-      >
-        {!currentIsFollowing && <UserPlus size={16} className="mr-1" />}
-        {isLoading || isCheckingStatus 
-          ? '...' 
-          : currentIsFollowing 
-            ? 'Following' 
-            : 'Follow'}
-      </button>
+    <>
+      {notification && (
+        <Notification
+          type={notification.type}
+          message={notification.message}
+          onClose={() => setNotification(null)}
+        />
+      )}
       
-      <button
-        onClick={handleRemove}
-        className="p-2 rounded-full hover:bg-gray-100 text-gray-500"
-        aria-label="Remove from suggestions"
-      >
-        <X size={18} />
-      </button>
-    </div>
+      <div className="flex space-x-2">
+        <button
+          onClick={handleFollow}
+          disabled={isLoading || isCheckingStatus || currentIsFollowing}
+          className={`px-3 py-1 rounded-full text-sm font-medium flex items-center
+            ${currentIsFollowing 
+              ? 'border border-gray-300 text-gray-700' 
+              : 'bg-blue-500 text-white hover:bg-blue-600'}
+            ${(isLoading || isCheckingStatus) ? 'opacity-75' : ''}
+            transition-all duration-200`}
+          aria-label={currentIsFollowing ? "Following" : "Follow"}
+        >
+          {!currentIsFollowing && <UserPlus size={16} className="mr-1" />}
+          {isLoading || isCheckingStatus 
+            ? '...' 
+            : currentIsFollowing 
+              ? 'Following' 
+              : 'Follow'}
+        </button>
+        
+        <button
+          onClick={handleRemove}
+          className="p-2 rounded-full hover:bg-gray-100 text-gray-500"
+          aria-label="Remove from suggestions"
+        >
+          <X size={18} />
+        </button>
+      </div>
+    </>
   );
 };
 

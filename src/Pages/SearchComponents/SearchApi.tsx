@@ -1,6 +1,4 @@
 // src/Pages/Search/api.ts
-import { collection, getDocs, query, where, orderBy, limit, doc, setDoc, getDoc } from 'firebase/firestore';
-import { db, auth } from '../../Services/Firebase';
 import { User as FirebaseUser } from 'firebase/auth';
 import { UserService, UserProfile } from '../../Services/UserService';
 
@@ -47,25 +45,24 @@ export const isUserFollowed = async (followerId: string, followingId: string): P
   }
 };
 
-// Remove a user from suggestions
+// Remove a user from suggestions - delegating to UserService
 export const removeUserSuggestion = async (userId: string, currentUserId: string): Promise<void> => {
-  const hiddenRef = doc(db, 'hidden-suggestions', `${currentUserId}_${userId}`);
-  await setDoc(hiddenRef, {
-    userId,
-    hiddenBy: currentUserId,
-    createdAt: new Date()
-  });
+  try {
+    await UserService.removeUserSuggestion(userId, currentUserId);
+  } catch (error) {
+    console.error("Error removing user suggestion:", error);
+    throw error;
+  }
 };
 
-// Get list of hidden user suggestions
+// Get list of hidden user suggestions - delegating to UserService
 export const getHiddenSuggestions = async (currentUserId: string): Promise<string[]> => {
-  const hiddenQuery = query(
-    collection(db, 'hidden-suggestions'),
-    where('hiddenBy', '==', currentUserId)
-  );
-  
-  const querySnapshot = await getDocs(hiddenQuery);
-  return querySnapshot.docs.map(doc => doc.data().userId);
+  try {
+    return await UserService.getHiddenSuggestions(currentUserId);
+  } catch (error) {
+    console.error("Error getting hidden suggestions:", error);
+    return [];
+  }
 };
 
 // Utility function to get user display information

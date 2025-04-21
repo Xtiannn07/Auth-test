@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../../Services/Firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import SuccessToast from '../../Components/UI/SuccessToast';
-import { useDispatch, useSelector } from 'react-redux';
+import Notification, { NotificationType } from '../../Components/UI/Notifications';
+import { useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
 
 interface PostPageProps {
@@ -21,9 +21,8 @@ export default function PostPage({
 }: PostPageProps) {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [error, setError] = useState('');
+  const [notification, setNotification] = useState<{ type: NotificationType; message: string } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showToast, setShowToast] = useState(false);
   const [shouldRedirect, setShouldRedirect] = useState(false);
   const currentUser = useSelector((state: RootState) => state.auth.currentUser);
   const navigate = useNavigate();
@@ -35,7 +34,6 @@ export default function PostPage({
       navigate('/signin');
     }
   }, [currentUser, navigate, shouldRedirect]);
-  
 
   useEffect(() => {
     if (shouldRedirect) {
@@ -50,26 +48,26 @@ export default function PostPage({
     e.preventDefault();
 
     if (!title.trim()) {
-      setError('Title is required');
+      setNotification({ type: 'error', message: 'Title is required' });
       return;
     }
 
     if (!content.trim()) {
-      setError('Content is required');
+      setNotification({ type: 'error', message: 'Content is required' });
       return;
     }
 
     if (content.length > maxContentLength) {
-      setError(`Content exceeds maximum length of ${maxContentLength} characters`);
+      setNotification({ type: 'error', message: `Content exceeds maximum length of ${maxContentLength} characters` });
       return;
     }
 
     if (!currentUser) {
-      setError('You must be logged in to post');
+      setNotification({ type: 'error', message: 'You must be logged in to post' });
       return;
     }
 
-    setError('');
+    setNotification(null);
     setIsSubmitting(true);
 
     try {
@@ -86,11 +84,11 @@ export default function PostPage({
 
       setTitle('');
       setContent('');
-      setShowToast(true);
-      setShouldRedirect(true); // Trigger the redirect sequence
+      setNotification({ type: 'success', message: 'Post created successfully!' });
+      setShouldRedirect(true);
     } catch (err) {
       console.error('Error submitting post:', err);
-      setError('Failed to submit your post. Please try again.');
+      setNotification({ type: 'error', message: 'Failed to submit your post. Please try again.' });
     } finally {
       setIsSubmitting(false);
     }
@@ -111,15 +109,15 @@ export default function PostPage({
 
       <div>Welcome, {currentUser.displayName || currentUser.email?.split('@')[0] || 'Anonymous'}</div>
 
-      {showToast && <SuccessToast message="Post created successfully!" />}
+      {notification && (
+        <Notification
+          type={notification.type}
+          message={notification.message}
+          onClose={() => setNotification(null)}
+        />
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-            {error}
-          </div>
-        )}
-
         <div>
           <label htmlFor="title" className="block text-gray-700 font-medium mb-2">
             Title

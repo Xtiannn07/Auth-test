@@ -14,6 +14,7 @@ const UsersCard: React.FC<UsersCardProps> = ({ user, onCardRemove }) => {
   const [isRemoving, setIsRemoving] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isVisible, setIsVisible] = useState(true);
   const currentUser = useSelector((state: RootState) => state.auth.currentUser);
   
   useEffect(() => {
@@ -35,13 +36,22 @@ const UsersCard: React.FC<UsersCardProps> = ({ user, onCardRemove }) => {
   
   const handleFollowStatusChange = (newStatus: boolean) => {
     setIsFollowing(newStatus);
+    // When user follows someone, start the removal animation
+    if (newStatus === true) {
+      handleRemove();
+    }
   };
   
   const handleRemove = () => {
     setIsRemoving(true);
-    // Use setTimeout to match the animation duration in UsersActionButtons
+    // Use setTimeout to match the animation duration
     setTimeout(() => {
-      if (onCardRemove) onCardRemove();
+      setIsVisible(false);
+      if (onCardRemove) {
+        setTimeout(() => {
+          onCardRemove();
+        }, 300);
+      }
     }, 300);
   };
 
@@ -56,6 +66,10 @@ const UsersCard: React.FC<UsersCardProps> = ({ user, onCardRemove }) => {
 
   // Username display - use username, or email without domain if no username
   const displayUsername = user.username || (user.email ? user.email.split('@')[0] : 'User');
+
+  if (!isVisible) {
+    return null;
+  }
 
   return (
     <div 
@@ -95,7 +109,7 @@ const UsersCard: React.FC<UsersCardProps> = ({ user, onCardRemove }) => {
       </Link>
       
       <UsersActionButtons 
-        userId={user.id}
+        userId={user.id || user.uid}
         isFollowing={isFollowing}
         onFollowStatusChange={handleFollowStatusChange}
         onRemove={handleRemove}

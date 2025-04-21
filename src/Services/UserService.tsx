@@ -7,13 +7,10 @@ import {
   query, 
   where, 
   getDocs,
-  arrayUnion,
-  arrayRemove,
   increment,
-  DocumentReference,
-  getFirestore,
   orderBy,
-  limit
+  limit,
+  runTransaction
 } from 'firebase/firestore';
 import { db } from './Firebase';
 
@@ -24,6 +21,10 @@ export interface UserProfile {
   email: string;
   photoURL?: string;
   bio?: string;
+  // Arrays to store followers and following directly in the user document
+  followers: Array<{uid: string, username: string}>;
+  following: Array<{uid: string, username: string}>;
+  // Keep counts for quick access
   followerCount: number;
   followingCount: number;
   createdAt?: string;
@@ -46,8 +47,10 @@ export class UserService {
         email: profileData.email || '',
         photoURL: profileData.photoURL || '',
         bio: profileData.bio || '',
-        followerCount: profileData.followerCount || 0,
-        followingCount: profileData.followingCount || 0,
+        followers: [], // Initialize empty followers array
+        following: [], // Initialize empty following array
+        followerCount: 0,
+        followingCount: 0,
         createdAt: typeof profileData.createdAt === 'string' 
           ? profileData.createdAt 
           : new Date().toISOString()
@@ -65,14 +68,7 @@ export class UserService {
           // Continue even if username mapping fails
         }
       }
-      // Initialize following and followers documents
-      try {
-        await this.createFollowingDocument(uid);
-        await this.createFollowersDocument(uid);
-      } catch (error) {
-        console.error('Error creating follow documents:', error);
-        // Continue even if follow documents creation fails
-      }
+      
       return userProfile;
     } catch (error) {
       console.error('Error creating user profile:', error);
@@ -87,28 +83,6 @@ export class UserService {
       await setDoc(usernameRef, { uid });
     } catch (error) {
       console.error('Error setting username mapping:', error);
-      throw error;
-    }
-  }
-
-  // Create following document
-  static async createFollowingDocument(uid: string): Promise<void> {
-    try {
-      const followingRef = doc(db, 'following', uid);
-      await setDoc(followingRef, { users: [] });
-    } catch (error) {
-      console.error('Error creating following document:', error);
-      throw error;
-    }
-  }
-
-  // Create followers document
-  static async createFollowersDocument(uid: string): Promise<void> {
-    try {
-      const followersRef = doc(db, 'followers', uid);
-      await setDoc(followersRef, { users: [] });
-    } catch (error) {
-      console.error('Error creating followers document:', error);
       throw error;
     }
   }
@@ -157,6 +131,13 @@ export class UserService {
         
         // Add new username mapping
         await this.setUsernameMapping(updates.username, uid);
+        
+        // If username is updated, we need to update all follower/following references
+        if (currentProfile.followers?.length > 0) {
+          await this.updateFollowerReferences(currentProfile.followers.map(f => f.uid), 
+                                              uid, 
+                                              updates.username);
+        }
       }
       
       // Update the profile
@@ -173,6 +154,38 @@ export class UserService {
     } catch (error) {
       console.error('Error updating user profile:', error);
       throw error;
+    }
+  }
+
+  // Helper method to update username in followers' following lists
+  static async updateFollowerReferences(
+    followerUids: string[], 
+    targetUid: string, 
+    newUsername: string
+  ): Promise<void> {
+    try {
+      for (const followerUid of followerUids) {
+        const followerRef = doc(db, 'users', followerUid);
+        const followerSnap = await getDoc(followerRef);
+        
+        if (followerSnap.exists()) {
+          const followerData = followerSnap.data() as UserProfile;
+          const following = followerData.following || [];
+          
+          // Find and update the username in the following array
+          const updatedFollowing = following.map(f => {
+            if (f.uid === targetUid) {
+              return { ...f, username: newUsername };
+            }
+            return f;
+          });
+          
+          await updateDoc(followerRef, { following: updatedFollowing });
+        }
+      }
+    } catch (error) {
+      console.error('Error updating follower references:', error);
+      // Continue even if updating follower references fails
     }
   }
 
@@ -254,37 +267,65 @@ export class UserService {
   }
 
   // Follow a user
-  static async followUser(currentUserUid: string, targetUserUid: string): Promise<void> {
+  static async followUser(currentUserUid: string, targetUserUid: string): Promise<boolean> {
     try {
-      // Add target user to current user's following list
+      // Ensure we have valid user IDs
+      if (!currentUserUid || !targetUserUid) {
+        console.error('Invalid user IDs for following');
+        return false;
+      }
+      
+      // Get current user profile
       const currentUserRef = doc(db, 'users', currentUserUid);
-      const followingRef = doc(db, 'following', currentUserUid);
+      const currentUserSnap = await getDoc(currentUserRef);
+      if (!currentUserSnap.exists()) {
+        throw new Error('Current user profile not found');
+      }
+      const currentUser = currentUserSnap.data() as UserProfile;
       
-      // Add current user to target user's followers list
+      // Get target user profile
       const targetUserRef = doc(db, 'users', targetUserUid);
-      const followersRef = doc(db, 'followers', targetUserUid);
+      const targetUserSnap = await getDoc(targetUserRef);
+      if (!targetUserSnap.exists()) {
+        throw new Error('Target user profile not found');
+      }
+      const targetUser = targetUserSnap.data() as UserProfile;
       
-      // Update following document
-      await setDoc(followingRef, {
-        users: arrayUnion(targetUserUid)
-      }, { merge: true });
-      
-      // Update followers document
-      await setDoc(followersRef, {
-        users: arrayUnion(currentUserUid)
-      }, { merge: true });
-      
-      // Update follower/following counts
-      await updateDoc(currentUserRef, {
-        followingCount: increment(1)
+      // Transaction to ensure both updates happen atomically
+      await runTransaction(db, async (transaction) => {
+        // Add target user to current user's following list
+        const currentUserFollowing = currentUser.following || [];
+        if (!currentUserFollowing.some(f => f.uid === targetUserUid)) {
+          currentUserFollowing.push({
+            uid: targetUserUid,
+            username: targetUser.username
+          });
+          
+          transaction.update(currentUserRef, {
+            following: currentUserFollowing,
+            followingCount: increment(1)
+          });
+        }
+        
+        // Add current user to target user's followers list
+        const targetUserFollowers = targetUser.followers || [];
+        if (!targetUserFollowers.some(f => f.uid === currentUserUid)) {
+          targetUserFollowers.push({
+            uid: currentUserUid,
+            username: currentUser.username
+          });
+          
+          transaction.update(targetUserRef, {
+            followers: targetUserFollowers,
+            followerCount: increment(1)
+          });
+        }
       });
       
-      await updateDoc(targetUserRef, {
-        followerCount: increment(1)
-      });
+      return true;
     } catch (error) {
       console.error('Error following user:', error);
-      throw error;
+      return false;
     }
   }
 
@@ -344,32 +385,43 @@ export class UserService {
   // Unfollow a user
   static async unfollowUser(currentUserUid: string, targetUserUid: string): Promise<void> {
     try {
-      // Remove target user from current user's following list
+      // Get current user profile
       const currentUserRef = doc(db, 'users', currentUserUid);
-      const followingRef = doc(db, 'following', currentUserUid);
+      const currentUserSnap = await getDoc(currentUserRef);
+      if (!currentUserSnap.exists()) {
+        throw new Error('Current user profile not found');
+      }
+      const currentUser = currentUserSnap.data() as UserProfile;
+      
+      // Get target user profile
+      const targetUserRef = doc(db, 'users', targetUserUid);
+      const targetUserSnap = await getDoc(targetUserRef);
+      if (!targetUserSnap.exists()) {
+        throw new Error('Target user profile not found');
+      }
+      const targetUser = targetUserSnap.data() as UserProfile;
+      
+      // Remove target user from current user's following list
+      const currentUserFollowing = currentUser.following || [];
+      const updatedFollowing = currentUserFollowing.filter(f => f.uid !== targetUserUid);
+      
+      if (updatedFollowing.length !== currentUserFollowing.length) {
+        await updateDoc(currentUserRef, {
+          following: updatedFollowing,
+          followingCount: increment(-1)
+        });
+      }
       
       // Remove current user from target user's followers list
-      const targetUserRef = doc(db, 'users', targetUserUid);
-      const followersRef = doc(db, 'followers', targetUserUid);
+      const targetUserFollowers = targetUser.followers || [];
+      const updatedFollowers = targetUserFollowers.filter(f => f.uid !== currentUserUid);
       
-      // Update following document
-      await updateDoc(followingRef, {
-        users: arrayRemove(targetUserUid)
-      });
-      
-      // Update followers document
-      await updateDoc(followersRef, {
-        users: arrayRemove(currentUserUid)
-      });
-      
-      // Update follower/following counts
-      await updateDoc(currentUserRef, {
-        followingCount: increment(-1)
-      });
-      
-      await updateDoc(targetUserRef, {
-        followerCount: increment(-1)
-      });
+      if (updatedFollowers.length !== targetUserFollowers.length) {
+        await updateDoc(targetUserRef, {
+          followers: updatedFollowers,
+          followerCount: increment(-1)
+        });
+      }
     } catch (error) {
       console.error('Error unfollowing user:', error);
       throw error;
@@ -379,13 +431,15 @@ export class UserService {
   // Check if a user is following another user
   static async isFollowing(currentUserUid: string, targetUserUid: string): Promise<boolean> {
     try {
-      const followingRef = doc(db, 'following', currentUserUid);
-      const followingSnap = await getDoc(followingRef);
+      const currentUserRef = doc(db, 'users', currentUserUid);
+      const currentUserSnap = await getDoc(currentUserRef);
       
-      if (!followingSnap.exists()) return false;
+      if (!currentUserSnap.exists()) return false;
       
-      const data = followingSnap.data();
-      return data.users?.includes(targetUserUid) || false;
+      const currentUser = currentUserSnap.data() as UserProfile;
+      const following = currentUser.following || [];
+      
+      return following.some(f => f.uid === targetUserUid);
     } catch (error) {
       console.error('Error checking following status:', error);
       throw error;
@@ -396,15 +450,21 @@ export class UserService {
   static async getUserSuggestions(uid: string, limit: number = 5): Promise<UserProfile[]> {
     try {
       // Get user's following list
-      const followingRef = doc(db, 'following', uid);
-      const followingSnap = await getDoc(followingRef);
+      const currentUserRef = doc(db, 'users', uid);
+      const currentUserSnap = await getDoc(currentUserRef);
       
-      const followingList = followingSnap.exists() 
-        ? followingSnap.data().users || []
-        : [];
+      if (!currentUserSnap.exists()) {
+        throw new Error('User profile not found');
+      }
+      
+      const currentUser = currentUserSnap.data() as UserProfile;
+      const followingList = currentUser.following || [];
+      
+      // Extract UIDs from following list
+      const followingUids = followingList.map(f => f.uid);
       
       // Add the current user to the exclusion list
-      const excludeUsers = [...followingList, uid];
+      const excludeUsers = [...followingUids, uid];
       
       // Query for users not in the exclusion list
       const usersRef = collection(db, 'users');
@@ -420,12 +480,51 @@ export class UserService {
         }
       });
       
+      // Get list of hidden suggestions
+      const hiddenSuggestions = await this.getHiddenSuggestions(uid);
+      
+      // Filter out hidden suggestions
+      const filteredSuggestions = suggestions.filter(
+        user => !hiddenSuggestions.includes(user.uid)
+      );
+      
       // Shuffle and limit the results
-      return suggestions
+      return filteredSuggestions
         .sort(() => 0.5 - Math.random())
         .slice(0, limit);
     } catch (error) {
       console.error('Error getting user suggestions:', error);
+      throw error;
+    }
+  }
+  
+  // Get hidden suggestions
+  static async getHiddenSuggestions(currentUserId: string): Promise<string[]> {
+    try {
+      const hiddenQuery = query(
+        collection(db, 'hidden-suggestions'),
+        where('hiddenBy', '==', currentUserId)
+      );
+      
+      const querySnapshot = await getDocs(hiddenQuery);
+      return querySnapshot.docs.map(doc => doc.data().userId);
+    } catch (error) {
+      console.error('Error getting hidden suggestions:', error);
+      return [];
+    }
+  }
+  
+  // Remove a user from suggestions
+  static async removeUserSuggestion(userId: string, currentUserId: string): Promise<void> {
+    try {
+      const hiddenRef = doc(db, 'hidden-suggestions', `${currentUserId}_${userId}`);
+      await setDoc(hiddenRef, {
+        userId,
+        hiddenBy: currentUserId,
+        createdAt: new Date()
+      });
+    } catch (error) {
+      console.error('Error removing user suggestion:', error);
       throw error;
     }
   }
