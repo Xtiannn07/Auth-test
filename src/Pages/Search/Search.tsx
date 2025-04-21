@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
 import SearchHeader from './SearchHeader';
-import UsersCard from './../SearchComponents/UserCard';
+import UsersCard from '../UsersComponents/UserCard';
 import { SkeletonUser } from '../../Components/UI/Skeleton';
 import { fetchUsers, searchUsers, getHiddenSuggestions, User } from '../SearchComponents/SearchApi';
 

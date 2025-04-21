@@ -1,6 +1,6 @@
 // src/Pages/Profile/ProfileEditModal.tsx
 import { useState, FormEvent } from 'react';
-import { UserProfile, UserService } from '../../../Services/UserService';
+import { UserProfile, UserService } from '../../Services/UserService';
 import { X, Camera } from 'lucide-react';
 
 interface ProfileEditModalProps {

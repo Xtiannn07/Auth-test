@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { useSelector } from 'react-redux';
-import { RootState } from '../../../store/store';
-import { PostService } from '../../../Services/PostService';
-import PostCard from '../../../Pages/PostComponents/PostCard';
+import { RootState } from '../../store/store';
+import { PostService } from '../../Services/PostService';
+import PostCard from '../PostComponents/PostCard';
 import { Loader } from 'lucide-react';
 
 // Define post interface matching PostCard requirements

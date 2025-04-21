@@ -3,8 +3,8 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
 import { useProfile } from '../../Contexts/ProfileContext';
 import { UserProfile } from '../../Services/UserService';
-import ProfileEditModal from './ProfileComponents/ProfileEditModal';
-import UserPosts from './ProfileComponents/UserPosts';
+import ProfileEditModal from '../ProfileComponents/ProfileEditModal';
+import UserPosts from '../ProfileComponents/UserPosts';
 import { Loader, Edit } from 'lucide-react';
 
 export default function ProfilePage() {

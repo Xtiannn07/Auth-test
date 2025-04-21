@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
 import { UserService, UserProfile } from '../../Services/UserService';
-import UserPosts from '../Profile/ProfileComponents/UserPosts';
+import UserPosts from '../ProfileComponents/UserPosts';
 import { Loader } from 'lucide-react';
 
 export default function UserProfilePage() {

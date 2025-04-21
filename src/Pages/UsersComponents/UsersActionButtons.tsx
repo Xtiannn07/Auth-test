@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { UserMinus, UserPlus, X } from 'lucide-react';
-import { followUser, removeUserSuggestion } from './SearchApi';
+import { followUser, removeUserSuggestion } from '../SearchComponents/SearchApi';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
 import Notification from '../../Components/UI/Notifications';
