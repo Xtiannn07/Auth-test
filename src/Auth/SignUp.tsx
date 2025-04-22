@@ -165,9 +165,7 @@ export default function SignUp() {
         username: username || `user_${uid.substring(0, 8)}`,
         email: email,
         photoURL: '',
-        bio: '',
-        followerCount: 0,
-        followingCount: 0
+        bio: ''
       };
       
       await UserService.createUserProfile(uid, minimalProfile);
@@ -213,9 +211,7 @@ export default function SignUp() {
         setPendingProfileData({
           displayName,
           username,
-          photoURL: user.photoURL || '',
-          followerCount: 0,
-          followingCount: 0
+          photoURL: user.photoURL || ''
         });
       }
     } catch (err) {

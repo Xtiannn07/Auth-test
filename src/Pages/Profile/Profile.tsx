@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
 import { useProfile } from '../../Contexts/ProfileContext';
@@ -6,12 +6,28 @@ import { UserProfile } from '../../Services/UserService';
 import ProfileEditModal from '../ProfileComponents/ProfileEditModal';
 import UserPosts from '../ProfileComponents/UserPosts';
 import { Loader, Edit } from 'lucide-react';
+import { UserService } from '../../Services/UserService';
 
 export default function ProfilePage() {
   const currentUser = useSelector((state: RootState) => state.auth.currentUser);
   const { userProfile: profile, loading, error } = useProfile();
   
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [followerCount, setFollowerCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+
+  // Fetch follower and following counts when profile changes
+  useEffect(() => {
+    const fetchCounts = async () => {
+      if (profile && profile.uid) {
+        const followers = await UserService.getFollowerCount(profile.uid);
+        const following = await UserService.getFollowingCount(profile.uid);
+        setFollowerCount(followers);
+        setFollowingCount(following);
+      }
+    };
+    fetchCounts();
+  }, [profile]);
 
   // Update profile after edit
   const handleProfileUpdate = (updatedProfile: UserProfile) => {
@@ -85,11 +101,11 @@ export default function ProfilePage() {
       {/* Stats section with improved styling */}
       <div className="flex justify-around py-5 border-b border-gray-200 bg-white shadow-sm">
         <div className="text-center">
-          <p className="font-bold text-2xl">{profile.followerCount || 0}</p>
+          <p className="font-bold text-2xl">{followerCount}</p>
           <p className="text-gray-500 text-sm font-medium">Followers</p>
         </div>
         <div className="text-center">
-          <p className="font-bold text-2xl">{profile.followingCount || 0}</p>
+          <p className="font-bold text-2xl">{followingCount}</p>
           <p className="text-gray-500 text-sm font-medium">Following</p>
         </div>
         <div className="text-center">

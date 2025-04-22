@@ -17,10 +17,6 @@ service cloud.firestore {
       allow update: if request.auth != null && 
                     request.auth.uid == userId &&
                     onlyUpdatesAllowedFields(request.resource.data, resource.data);
-      // Allow users to update followers/following lists for follow functionality
-      allow update: if request.auth != null && 
-                    onlyUpdatesFollowData(request.resource.data, resource.data) &&
-                    isValidFollowOperation(request.resource.data, resource.data, request.auth.uid);
       
       // User's posts subcollection
       match /posts/{postId} {
@@ -35,13 +31,27 @@ service cloud.firestore {
     match /following/{userId} {
       allow read: if true;
       allow create, update: if request.auth != null && request.auth.uid == userId;
+      
+      // Users subcollection to store who user is following
+      match /users/{followedUserId} {
+        allow read: if true;
+        // Only allow user to update their own following list
+        allow create, update, delete: if request.auth != null && request.auth.uid == userId;
+      }
     }
 
     // ==================== FOLLOWERS COLLECTION ====================
     match /followers/{userId} {
       allow read: if true;
-      // Allow the user to manage their followers list
-      allow create, update: if request.auth != null;
+      
+      // Users subcollection to store who follows the user
+      match /users/{followerId} {
+        allow read: if true;
+        // Allow followers to add/remove themselves
+        allow create, update: if request.auth != null && request.auth.uid == followerId;
+        // Allow the user who is being followed to remove followers
+        allow delete: if request.auth != null && (request.auth.uid == userId || request.auth.uid == followerId);
+      }
     }
 
     // ==================== POSTS COLLECTION ====================
@@ -66,10 +76,9 @@ service cloud.firestore {
         "bio",
         "website",
         "avatarUrl",
-        "followers",
-        "following",
-        "followerCount",
-        "followingCount"
+        "username",
+        "photoURL",
+        "email"
       ]);
     }
 
@@ -115,40 +124,6 @@ service cloud.firestore {
       // Ensure only one like change at a time
       return newLikes.size() == oldLikes.size() + 1 ||
              newLikes.size() == oldLikes.size() - 1;
-    }
-
-    // Function to check if only follower/following data is being modified
-    function onlyUpdatesFollowData(newData, oldData) {
-      return newData.diff(oldData).affectedKeys().hasOnly([
-        "followers",
-        "following",
-        "followerCount",
-        "followingCount"
-      ]);
-    }
-    
-    // Function to validate that the follow operation is legitimate
-    function isValidFollowOperation(newData, oldData, authUid) {
-      // Case 1: User is updating their own document to add/remove someone from their following list
-      let isUpdatingOwnDocument = request.auth.uid == resource.id;
-      let isUpdatingFollowing = newData.following != null && oldData.following != null && 
-                              (newData.diff(oldData).affectedKeys().hasOnly(['following', 'followingCount']));
-      
-      // Case 2: User is updating someone else's document to add/remove themselves from followers list
-      let isUpdatingSomeoneElsesDocument = request.auth.uid != resource.id;
-      let hasFollowersData = newData.followers != null && oldData.followers != null;
-      let isUpdatingFollowers = hasFollowersData && 
-                              (newData.diff(oldData).affectedKeys().hasOnly(['followers', 'followerCount']));
-      let isAddingOrRemovingSelf = (
-        // Adding follower
-        (newData.followers[authUid] != null && oldData.followers[authUid] == null) ||
-        // Removing follower
-        (newData.followers[authUid] == null && oldData.followers[authUid] != null)
-      );
-      
-      // Return true if either case is valid
-      return (isUpdatingOwnDocument && isUpdatingFollowing) || 
-             (isUpdatingSomeoneElsesDocument && isUpdatingFollowers && isAddingOrRemovingSelf);
     }
 
     // ==================== DEFAULT DENY ====================

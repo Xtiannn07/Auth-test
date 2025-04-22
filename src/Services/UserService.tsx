@@ -10,7 +10,8 @@ import {
   increment,
   orderBy,
   limit,
-  runTransaction
+  runTransaction,
+  deleteDoc
 } from 'firebase/firestore';
 import { db } from './Firebase';
 
@@ -21,13 +22,7 @@ export interface UserProfile {
   email: string;
   photoURL?: string;
   bio?: string;
-  // Maps to store followers and following directly in the user document
-  // Key is the user's UID, value contains username for displaying
-  followers: Record<string, {username: string}>;
-  following: Record<string, {username: string}>;
-  // Keep counts for quick access
-  followerCount: number;
-  followingCount: number;
+  // Removed followers and following maps and counts from user document
   createdAt?: string;
   id?: string; // Added for compatibility with existing User type
 }
@@ -48,10 +43,6 @@ export class UserService {
         email: profileData.email || '',
         photoURL: profileData.photoURL || '',
         bio: profileData.bio || '',
-        followers: {}, // Initialize empty followers map
-        following: {}, // Initialize empty following map
-        followerCount: 0,
-        followingCount: 0,
         createdAt: typeof profileData.createdAt === 'string' 
           ? profileData.createdAt 
           : new Date().toISOString()
@@ -132,13 +123,6 @@ export class UserService {
         
         // Add new username mapping
         await this.setUsernameMapping(updates.username, uid);
-        
-        // If username is updated, we need to update all follower/following references
-        if (currentProfile.followers && Object.keys(currentProfile.followers).length > 0) {
-          await this.updateFollowerReferences(Object.keys(currentProfile.followers), 
-                                              uid, 
-                                              updates.username);
-        }
       }
       
       // Update the profile
@@ -155,38 +139,6 @@ export class UserService {
     } catch (error) {
       console.error('Error updating user profile:', error);
       throw error;
-    }
-  }
-
-  // Helper method to update username in followers' following lists
-  static async updateFollowerReferences(
-    followerUids: string[], 
-    targetUid: string, 
-    newUsername: string
-  ): Promise<void> {
-    try {
-      for (const followerUid of followerUids) {
-        const followerRef = doc(db, 'users', followerUid);
-        const followerSnap = await getDoc(followerRef);
-        
-        if (followerSnap.exists()) {
-          const followerData = followerSnap.data() as UserProfile;
-          const following = followerData.following || {};
-          
-          // Update the username in the following map
-          if (following[targetUid]) {
-            const updatedFollowing = { 
-              ...following,
-              [targetUid]: { username: newUsername }
-            };
-            
-            await updateDoc(followerRef, { following: updatedFollowing });
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error updating follower references:', error);
-      // Continue even if updating follower references fails
     }
   }
 
@@ -267,66 +219,162 @@ export class UserService {
     }
   }
 
-  // Follow a user
+  // Follow a user - updated to use following and followers collections with username maps
   static async followUser(currentUserUid: string, targetUserUid: string): Promise<boolean> {
     try {
-      // Ensure we have valid user IDs
       if (!currentUserUid || !targetUserUid) {
         console.error('Invalid user IDs for following');
         return false;
       }
-      
-      // Get current user profile
-      const currentUserRef = doc(db, 'users', currentUserUid);
-      const currentUserSnap = await getDoc(currentUserRef);
-      if (!currentUserSnap.exists()) {
-        throw new Error('Current user profile not found');
-      }
-      const currentUser = currentUserSnap.data() as UserProfile;
-      
-      // Get target user profile
-      const targetUserRef = doc(db, 'users', targetUserUid);
-      const targetUserSnap = await getDoc(targetUserRef);
-      if (!targetUserSnap.exists()) {
-        throw new Error('Target user profile not found');
-      }
-      const targetUser = targetUserSnap.data() as UserProfile;
-      
-      // Transaction to ensure both updates happen atomically
+
+      // Get both users' profiles to access their usernames
+      const [currentUser, targetUser] = await Promise.all([
+        this.getUserProfile(currentUserUid),
+        this.getUserProfile(targetUserUid)
+      ]);
+
+      const followingRef = doc(db, 'following', currentUserUid);
+      const followersRef = doc(db, 'followers', targetUserUid);
+
+      // Add target user to current user's following subcollection
+      const followingUsersRef = collection(followingRef, 'users');
+      // Add current user to target user's followers subcollection
+      const followersUsersRef = collection(followersRef, 'users');
+
+      // Use transaction to ensure atomicity
       await runTransaction(db, async (transaction) => {
-        // Add target user to current user's following map
-        const currentUserFollowing = currentUser.following || {};
-        if (!currentUserFollowing[targetUserUid]) {
-          const updatedFollowing = { 
-            ...currentUserFollowing,
-            [targetUserUid]: { username: targetUser.username }
-          };
-          
-          transaction.update(currentUserRef, {
-            following: updatedFollowing,
-            followingCount: increment(1)
-          });
-        }
+        const followingDoc = doc(followingUsersRef, targetUserUid);
+        const followersDoc = doc(followersUsersRef, currentUserUid);
+
+        transaction.set(followingDoc, { 
+          username: targetUser.username,
+          displayName: targetUser.displayName,
+          photoURL: targetUser.photoURL || '',
+          timestamp: new Date().toISOString()
+        });
         
-        // Add current user to target user's followers map
-        const targetUserFollowers = targetUser.followers || {};
-        if (!targetUserFollowers[currentUserUid]) {
-          const updatedFollowers = { 
-            ...targetUserFollowers,
-            [currentUserUid]: { username: currentUser.username }
-          };
-          
-          transaction.update(targetUserRef, {
-            followers: updatedFollowers,
-            followerCount: increment(1)
-          });
-        }
+        transaction.set(followersDoc, { 
+          username: currentUser.username,
+          displayName: currentUser.displayName,
+          photoURL: currentUser.photoURL || '',
+          timestamp: new Date().toISOString()
+        });
       });
-      
+
       return true;
     } catch (error) {
       console.error('Error following user:', error);
       return false;
+    }
+  }
+
+  // Unfollow a user - updated to use following and followers collections
+  static async unfollowUser(currentUserUid: string, targetUserUid: string): Promise<void> {
+    try {
+      const followingRef = doc(db, 'following', currentUserUid);
+      const followersRef = doc(db, 'followers', targetUserUid);
+
+      const followingUsersRef = collection(followingRef, 'users');
+      const followersUsersRef = collection(followersRef, 'users');
+
+      const followingDoc = doc(followingUsersRef, targetUserUid);
+      const followersDoc = doc(followersUsersRef, currentUserUid);
+
+      // Use transaction to ensure atomicity
+      await runTransaction(db, async (transaction) => {
+        transaction.delete(followingDoc);
+        transaction.delete(followersDoc);
+      });
+    } catch (error) {
+      console.error('Error unfollowing user:', error);
+      throw error;
+    }
+  }
+
+  // Check if a user is following another user - updated to use following collection
+  static async isFollowing(currentUserUid: string, targetUserUid: string): Promise<boolean> {
+    try {
+      const followingUsersRef = collection(db, 'following', currentUserUid, 'users');
+      const followingDoc = doc(followingUsersRef, targetUserUid);
+      const followingSnap = await getDoc(followingDoc);
+      return followingSnap.exists();
+    } catch (error) {
+      console.error('Error checking following status:', error);
+      return false;
+    }
+  }
+
+  // Get follower count from followers collection
+  static async getFollowerCount(userUid: string): Promise<number> {
+    try {
+      const followersUsersRef = collection(db, 'followers', userUid, 'users');
+      const snapshot = await getDocs(followersUsersRef);
+      return snapshot.size;
+    } catch (error) {
+      console.error('Error getting follower count:', error);
+      return 0;
+    }
+  }
+
+  // Get following count from following collection
+  static async getFollowingCount(userUid: string): Promise<number> {
+    try {
+      const followingUsersRef = collection(db, 'following', userUid, 'users');
+      const snapshot = await getDocs(followingUsersRef);
+      return snapshot.size;
+    } catch (error) {
+      console.error('Error getting following count:', error);
+      return 0;
+    }
+  }
+
+  // Get followers list from followers collection
+  static async getFollowers(userUid: string): Promise<UserProfile[]> {
+    try {
+      const followersUsersRef = collection(db, 'followers', userUid, 'users');
+      const snapshot = await getDocs(followersUsersRef);
+      const followers: UserProfile[] = [];
+      
+      for (const docSnap of snapshot.docs) {
+        const followerUid = docSnap.id;
+        try {
+          const userProfile = await this.getUserProfile(followerUid);
+          followers.push(userProfile);
+        } catch (error) {
+          console.error(`Error getting follower profile for ${followerUid}:`, error);
+          // Continue with other followers
+        }
+      }
+      
+      return followers;
+    } catch (error) {
+      console.error('Error getting followers:', error);
+      return [];
+    }
+  }
+
+  // Get following list from following collection
+  static async getFollowing(userUid: string): Promise<UserProfile[]> {
+    try {
+      const followingUsersRef = collection(db, 'following', userUid, 'users');
+      const snapshot = await getDocs(followingUsersRef);
+      const following: UserProfile[] = [];
+      
+      for (const docSnap of snapshot.docs) {
+        const followingUid = docSnap.id;
+        try {
+          const userProfile = await this.getUserProfile(followingUid);
+          following.push(userProfile);
+        } catch (error) {
+          console.error(`Error getting following profile for ${followingUid}:`, error);
+          // Continue with other followed users
+        }
+      }
+      
+      return following;
+    } catch (error) {
+      console.error('Error getting following:', error);
+      return [];
     }
   }
 
@@ -383,91 +431,14 @@ export class UserService {
     }
   }
 
-  // Unfollow a user
-  static async unfollowUser(currentUserUid: string, targetUserUid: string): Promise<void> {
-    try {
-      // Get current user profile
-      const currentUserRef = doc(db, 'users', currentUserUid);
-      const currentUserSnap = await getDoc(currentUserRef);
-      if (!currentUserSnap.exists()) {
-        throw new Error('Current user profile not found');
-      }
-      const currentUser = currentUserSnap.data() as UserProfile;
-      
-      // Get target user profile
-      const targetUserRef = doc(db, 'users', targetUserUid);
-      const targetUserSnap = await getDoc(targetUserRef);
-      if (!targetUserSnap.exists()) {
-        throw new Error('Target user profile not found');
-      }
-      const targetUser = targetUserSnap.data() as UserProfile;
-      
-      // Remove target user from current user's following map
-      const currentUserFollowing = currentUser.following || {};
-      
-      if (currentUserFollowing[targetUserUid]) {
-        const updatedFollowing = { ...currentUserFollowing };
-        delete updatedFollowing[targetUserUid];
-        
-        await updateDoc(currentUserRef, {
-          following: updatedFollowing,
-          followingCount: increment(-1)
-        });
-      }
-      
-      // Remove current user from target user's followers map
-      const targetUserFollowers = targetUser.followers || {};
-      
-      if (targetUserFollowers[currentUserUid]) {
-        const updatedFollowers = { ...targetUserFollowers };
-        delete updatedFollowers[currentUserUid];
-        
-        await updateDoc(targetUserRef, {
-          followers: updatedFollowers,
-          followerCount: increment(-1)
-        });
-      }
-    } catch (error) {
-      console.error('Error unfollowing user:', error);
-      throw error;
-    }
-  }
-
-  // Check if a user is following another user
-  static async isFollowing(currentUserUid: string, targetUserUid: string): Promise<boolean> {
-    try {
-      const currentUserRef = doc(db, 'users', currentUserUid);
-      const currentUserSnap = await getDoc(currentUserRef);
-      
-      if (!currentUserSnap.exists()) return false;
-      
-      const currentUser = currentUserSnap.data() as UserProfile;
-      const following = currentUser.following || {};
-      
-      return !!following[targetUserUid];
-    } catch (error) {
-      console.error('Error checking following status:', error);
-      throw error;
-    }
-  }
-
   // Get user suggestions (users not followed)
   static async getUserSuggestions(uid: string, limit: number = 5): Promise<UserProfile[]> {
     try {
       // Get user's following list
-      const currentUserRef = doc(db, 'users', uid);
-      const currentUserSnap = await getDoc(currentUserRef);
-      
-      if (!currentUserSnap.exists()) {
-        throw new Error('User profile not found');
-      }
-      
-      const currentUser = currentUserSnap.data() as UserProfile;
-      const following = currentUser.following || {};
-      
-      // Extract UIDs from following map
-      const followingUids = Object.keys(following);
-      
+      const followingUsersRef = collection(db, 'following', uid, 'users');
+      const followingSnap = await getDocs(followingUsersRef);
+      const followingUids = followingSnap.docs.map(doc => doc.id);
+
       // Add the current user to the exclusion list
       const excludeUsers = [...followingUids, uid];
       

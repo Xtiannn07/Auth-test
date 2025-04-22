@@ -15,6 +15,8 @@ export default function UserProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isFollowing, setIsFollowing] = useState(false);
+  const [followerCount, setFollowerCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
 
   // Fetch the profile based on userId
   useEffect(() => {
@@ -50,6 +52,13 @@ export default function UserProfilePage() {
           );
           setIsFollowing(following);
         }
+
+        // Fetch follower and following counts from new collections
+        const followersCount = await UserService.getFollowerCount(userId);
+        const followingCount = await UserService.getFollowingCount(userId);
+        setFollowerCount(followersCount);
+        setFollowingCount(followingCount);
+
       } catch (err) {
         console.error('Error fetching profile:', err);
         setError('Failed to load profile');
@@ -69,9 +78,11 @@ export default function UserProfilePage() {
       if (isFollowing) {
         await UserService.unfollowUser(currentUser.uid, profile.uid);
         setIsFollowing(false);
+        setFollowerCount(prev => prev - 1);
       } else {
         await UserService.followUser(currentUser.uid, profile.uid);
         setIsFollowing(true);
+        setFollowerCount(prev => prev + 1);
       }
     } catch (err) {
       console.error('Error updating follow status:', err);
@@ -142,11 +153,11 @@ export default function UserProfilePage() {
       {/* Stats section */}
       <div className="flex justify-around py-4 border-b border-gray-200">
         <div className="text-center">
-          <p className="font-bold text-xl">{profile.followerCount || 0}</p>
+          <p className="font-bold text-xl">{followerCount}</p>
           <p className="text-gray-500 text-sm">Followers</p>
         </div>
         <div className="text-center">
-          <p className="font-bold text-xl">{profile.followingCount || 0}</p>
+          <p className="font-bold text-xl">{followingCount}</p>
           <p className="text-gray-500 text-sm">Following</p>
         </div>
         <div className="text-center">

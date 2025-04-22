@@ -7,6 +7,8 @@ interface ProfileHeaderProps {
   profile: UserProfile;
   isCurrentUser: boolean;
   isFollowing: boolean;
+  followerCount: number;
+  followingCount: number;
   onEditProfile: () => void;
   onFollowUser: () => void;
 }
@@ -15,6 +17,8 @@ const ProfileHeader = ({
   profile, 
   isCurrentUser, 
   isFollowing,
+  followerCount,
+  followingCount,
   onEditProfile,
   onFollowUser
 }: ProfileHeaderProps) => {
@@ -95,11 +99,11 @@ const ProfileHeader = ({
         {/* Follower stats */}
         <div className="flex space-x-4 text-sm">
           <div>
-            <span className="font-medium">{profile.followerCount || 0}</span>{' '}
+            <span className="font-medium">{followerCount || 0}</span>{' '}
             <span className="text-gray-500">Followers</span>
           </div>
           <div>
-            <span className="font-medium">{profile.followingCount || 0}</span>{' '}
+            <span className="font-medium">{followingCount || 0}</span>{' '}
             <span className="text-gray-500">Following</span>
           </div>
         </div>

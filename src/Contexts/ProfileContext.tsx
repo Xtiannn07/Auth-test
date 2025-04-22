@@ -128,8 +128,6 @@ export function ProfileProvider({ children }: ProfileProviderProps) {
         email: profileData.email || currentUser.email || '',
         photoURL: profileData.photoURL || currentUser.photoURL || '',
         bio: profileData.bio || '',
-        followerCount: profileData.followerCount || 0,
-        followingCount: profileData.followingCount || 0,
         createdAt: new Date().toISOString()
       };
       
@@ -145,18 +143,16 @@ export function ProfileProvider({ children }: ProfileProviderProps) {
       } catch (initialError) {
         console.error('Error in profile creation. Detailed error:', initialError);
         
-        // On failure, try with just the required fields
-        try {
-          console.log('Attempting with minimal profile data');
-          const minimalProfile = {
-            uid,
-            displayName: completeProfileData.displayName,
-            username: completeProfileData.username,
-            email: completeProfileData.email,
-            followerCount: 0,
-            followingCount: 0,
-            createdAt: new Date().toISOString()
-          };
+          // On failure, try with just the required fields
+          try {
+            console.log('Attempting with minimal profile data');
+            const minimalProfile = {
+              uid,
+              displayName: completeProfileData.displayName,
+              username: completeProfileData.username,
+              email: completeProfileData.email,
+              createdAt: new Date().toISOString()
+            };
           
           const profile = await UserService.createUserProfile(uid, minimalProfile);
           console.log('Minimal profile created successfully:', profile);
