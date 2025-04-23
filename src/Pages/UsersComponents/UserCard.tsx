@@ -36,25 +36,30 @@ const UsersCard: React.FC<UsersCardProps> = ({ user, onCardRemove }) => {
   
   const handleFollowStatusChange = (newStatus: boolean) => {
     setIsFollowing(newStatus);
-    // When user follows someone, start the removal animation
-    if (newStatus === true) {
+    if (newStatus) {
       handleRemove();
     }
   };
   
   const handleRemove = () => {
+    if (!isVisible) return; // Prevent multiple removals
+    
     setIsRemoving(true);
-    // Use setTimeout to match the animation duration
     setTimeout(() => {
       setIsVisible(false);
       if (onCardRemove) {
-        setTimeout(() => {
-          onCardRemove();
-        }, 300);
+        onCardRemove();
       }
-    }, 300);
+    }, 300); // Match the CSS transition duration
   };
 
+  if (!isVisible) {
+    return null;
+  }
+
+  // Username display - use username, or email without domain if no username
+  const displayUsername = user.username || (user.email ? user.email.split('@')[0] : 'User');
+  
   // Get initial letter for avatar placeholder
   const userInitial = user.displayName 
     ? user.displayName.charAt(0).toUpperCase() 
@@ -64,25 +69,17 @@ const UsersCard: React.FC<UsersCardProps> = ({ user, onCardRemove }) => {
         ? user.email.charAt(0).toUpperCase()
         : '?';
 
-  // Username display - use username, or email without domain if no username
-  const displayUsername = user.username || (user.email ? user.email.split('@')[0] : 'User');
-
-  if (!isVisible) {
-    return null;
-  }
-
   return (
     <div 
       className={`bg-white rounded-lg shadow-sm p-4 mb-3 flex items-center justify-between
-        ${isRemoving ? 'transform translate-x-full opacity-0' : ''}
-        transition-all duration-300
+        ${isRemoving ? 'transform translate-x-full opacity-0' : 'transform translate-x-0 opacity-100'}
+        transition-all duration-300 ease-out
       `}
     >
       <Link 
         to={`/user/${user.id}`} 
         className="flex items-center flex-1"
       >
-        {/* Avatar placeholder */}
         <div className="w-12 h-12 rounded-full bg-gray-200 mr-4 flex items-center justify-center">
           {user.photoURL ? (
             <img 
@@ -110,6 +107,8 @@ const UsersCard: React.FC<UsersCardProps> = ({ user, onCardRemove }) => {
       
       <UsersActionButtons 
         userId={user.id || user.uid}
+        username={user.username}
+        displayName={user.displayName}
         isFollowing={isFollowing}
         onFollowStatusChange={handleFollowStatusChange}
         onRemove={handleRemove}

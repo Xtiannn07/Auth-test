@@ -1,5 +1,5 @@
 // src/Components/UsersActionButtons.tsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { UserMinus, UserPlus, X } from 'lucide-react';
 import { followUser, removeUserSuggestion } from '../SearchComponents/SearchApi';
@@ -32,6 +32,10 @@ const UsersActionButtons: React.FC<UsersActionButtonsProps> = ({
   const [notification, setNotification] = useState<{type: 'success' | 'error', message: string} | null>(null);
   const currentUser = useSelector((state: RootState) => state.auth.currentUser);
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    setCurrentIsFollowing(isFollowing);
+  }, [isFollowing]);
 
   const handleFollow = async () => {
     if (!currentUser) return;

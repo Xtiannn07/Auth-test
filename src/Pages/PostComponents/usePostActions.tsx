@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../../Services/Firebase';
-import { PostService, PostLike, Comment, Repost } from '../../Services/PostService';
+import { PostService, PostLike, Comment } from '../../Services/PostService';
 
 interface UsePostActionsProps {
   post: {
@@ -45,9 +45,15 @@ export function usePostActions({ post, currentUser, onLikeUpdate, onDeletePost }
   const [commentText, setCommentText] = useState('');
   
   const isOwnPost = currentUser && post.author.id === currentUser.uid;
-  const likeCount = post.likeCount || 0;
+  const [likeCount, setLikeCount] = useState(post.likeCount || 0);
+  const [repostCount, setRepostCount] = useState(post.repostCount || 0);
   const commentCount = post.commentCount || 0;
-  const repostCount = post.repostCount || 0;
+
+  // Update counts when post changes
+  useEffect(() => {
+    setLikeCount(post.likeCount || 0);
+    setRepostCount(post.repostCount || 0);
+  }, [post.likeCount, post.repostCount]);
   
   // Check initial engagement status
   useEffect(() => {
@@ -134,10 +140,15 @@ export function usePostActions({ post, currentUser, onLikeUpdate, onDeletePost }
       if (isLiked) {
         await PostService.unlikePost(post.id, currentUser.uid);
         setIsLiked(false);
+        setLikes(prev => prev.filter(like => like.userId !== currentUser.uid));
+        setLikeCount(prev => Math.max(0, prev - 1));
       } else {
         const displayName = currentUser.displayName || currentUser.email?.split('@')[0] || 'Anonymous';
         await PostService.likePost(post.id, currentUser.uid, displayName);
         setIsLiked(true);
+        // Add timestamp to match PostLike type
+        setLikes(prev => [...prev, { userId: currentUser.uid, displayName, timestamp: new Date() }]);
+        setLikeCount(prev => prev + 1);
       }
       
       if (onLikeUpdate) {
@@ -186,10 +197,12 @@ export function usePostActions({ post, currentUser, onLikeUpdate, onDeletePost }
         await PostService.unrepostPost(repostId, currentUser.uid, post.id);
         setIsReposted(false);
         setRepostId(null);
+        setRepostCount(prev => Math.max(0, prev - 1));
       } else {
         const repost = await PostService.repostPost(post.id, currentUser.uid);
         setIsReposted(true);
         setRepostId(repost.id);
+        setRepostCount(prev => prev + 1);
       }
     } catch (err) {
       console.error('Error reposting:', err);

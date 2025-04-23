@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, MessageCircle, Repeat, Bookmark, MoreVertical, Send, X, Trash2 } from 'lucide-react';
 import { usePostActions } from './usePostActions';
 import { formatDate } from '../../utils/dateUtils';
-import { PostLike, Comment } from '../../Services/PostService';
 
 interface PostCardProps {
   post: {
@@ -40,17 +39,6 @@ export default function PostCard({
   currentUser,
   customAnimation
 }: PostCardProps) {
-  // UI state
-  const [showDeleteMenu, setShowDeleteMenu] = useState(false);
-  const [showLikes, setShowLikes] = useState(false);
-  const [showReposts, setShowReposts] = useState(false);
-  const [showComments, setShowComments] = useState(false);
-  const [showAllLikes, setShowAllLikes] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const likesRef = useRef<HTMLDivElement>(null);
-  const repostsRef = useRef<HTMLDivElement>(null);
-  const commentsRef = useRef<HTMLDivElement>(null);
-  
   // Get post actions from hook
   const {
     isLiking,
@@ -73,7 +61,6 @@ export default function PostCard({
     comments,
     commentText,
     setCommentText,
-    likeCount,
     commentCount,
     repostCount
   } = usePostActions({ 
@@ -82,7 +69,34 @@ export default function PostCard({
     onLikeUpdate: onLike, 
     onDeletePost 
   });
-  
+
+  // Add state for local counts
+  const [localLikeCount, setLocalLikeCount] = useState(post.likeCount || 0);
+  const [localRepostCount, setLocalRepostCount] = useState(post.repostCount || 0);
+
+  // Update local counts when props change
+  useEffect(() => {
+    setLocalLikeCount(post.likeCount || 0);
+    setLocalRepostCount(post.repostCount || 0);
+  }, [post.likeCount, post.repostCount]);
+
+  // Update the button styles - make them more robust
+  const buttonBaseClasses = "flex items-center space-x-1 px-2 py-1 rounded transition-all duration-300 disabled:opacity-50";
+  const likeButtonClasses = `${buttonBaseClasses} ${isLiked ? 'text-[#FF3040]' : 'text-gray-600 hover:bg-gray-100'}`;
+  const repostButtonClasses = `${buttonBaseClasses} ${isReposted ? 'text-[#00C853]' : 'text-gray-600 hover:bg-gray-100'}`;
+  const saveButtonClasses = `${buttonBaseClasses} ${isSaved ? 'text-[#FFD700]' : 'text-gray-600 hover:bg-gray-100'}`;
+
+  // UI state
+  const [showDeleteMenu, setShowDeleteMenu] = useState(false);
+  const [showLikes, setShowLikes] = useState(false);
+  const [showReposts, setShowReposts] = useState(false);
+  const [showComments, setShowComments] = useState(false);
+  const [showAllLikes, setShowAllLikes] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const likesRef = useRef<HTMLDivElement>(null);
+  const repostsRef = useRef<HTMLDivElement>(null);
+  const commentsRef = useRef<HTMLDivElement>(null);
+
   // Close popups when clicking outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -90,35 +104,35 @@ export default function PostCard({
       if (showDeleteMenu && menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setShowDeleteMenu(false);
       }
-      
+
       // Close likes popup if clicked outside
       if (showLikes && likesRef.current && !likesRef.current.contains(e.target as Node)) {
         setShowLikes(false);
       }
-      
+
       // Close reposts popup if clicked outside
       if (showReposts && repostsRef.current && !repostsRef.current.contains(e.target as Node)) {
         setShowReposts(false);
       }
     };
-    
+
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showDeleteMenu, showLikes, showReposts]);
-  
+
   const toggleDeleteMenu = () => setShowDeleteMenu(prev => !prev);
   const toggleComments = () => setShowComments(prev => !prev);
-  
+
   const formattedDate = formatDate(post.createdAt);
-  
+
   const displayContent = showFullContent ? 
     post.content : 
     post.content.length > maxContentLength ? 
       `${post.content.substring(0, maxContentLength)}...` : 
       post.content;
-  
+
   // If post is being deleted, show deletion animation
   if (isDeleting) {
     return (
@@ -135,20 +149,7 @@ export default function PostCard({
       </motion.div>
     );
   }
-  
-  // Generate color classes for active states - applied to icons instead of buttons
-  const likeColorClass = isLiked 
-    ? 'text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500' 
-    : 'text-gray-600';
-    
-  const repostColorClass = isReposted 
-    ? 'text-transparent bg-clip-text bg-gradient-to-r from-green-500 to-teal-500' 
-    : 'text-gray-600';
-    
-  const saveColorClass = isSaved 
-    ? 'text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-amber-500' 
-    : 'text-gray-600';
-  
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -156,20 +157,20 @@ export default function PostCard({
       transition={{ duration: 0.3, delay: customAnimation?.delay || 0 }}
       className="bg-white rounded-lg shadow p-4 border border-gray-200 mb-4"
     >
-      {/* SVG Gradients for icons */}
+      {/* SVG Gradients for icons - update color stops */}
       <svg width="0" height="0" className="hidden">
         <defs>
           <linearGradient id="likeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#8B5CF6" />
-            <stop offset="100%" stopColor="#EC4899" />
+            <stop offset="0%" stopColor="#FF3040" />
+            <stop offset="100%" stopColor="#FF79A3" />
           </linearGradient>
           <linearGradient id="repostGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#10B981" />
-            <stop offset="100%" stopColor="#0D9488" />
+            <stop offset="0%" stopColor="#00C853" />
+            <stop offset="100%" stopColor="#69F0AE" />
           </linearGradient>
           <linearGradient id="saveGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#F59E0B" />
-            <stop offset="100%" stopColor="#D97706" />
+            <stop offset="0%" stopColor="#FFD700" />
+            <stop offset="100%" stopColor="#FFA000" />
           </linearGradient>
         </defs>
       </svg>
@@ -227,23 +228,31 @@ export default function PostCard({
           {/* Like Button with Popup */}
           <div className="relative">
             <button 
-              onClick={handleLikeToggle}
+              onClick={async () => {
+                const prevCount = localLikeCount;
+                setLocalLikeCount(prev => isLiked ? prev - 1 : prev + 1);
+                try {
+                  await handleLikeToggle();
+                } catch (err) {
+                  setLocalLikeCount(prevCount); // Revert on error
+                }
+              }}
               onMouseEnter={() => likes.length > 0 && setShowLikes(true)}
               onMouseLeave={() => !showAllLikes && setShowLikes(false)}
               disabled={isLiking || !currentUser}
-              className="flex items-center space-x-1 px-2 py-1 rounded hover:bg-gray-100 transition-all duration-300 disabled:opacity-50"
+              className={likeButtonClasses}
               aria-label={isLiked ? "Unlike post" : "Like post"}
               title={isLiked ? "Unlike post" : "Like post"}
             >
               <Heart 
                 size={20}
-                className={likeColorClass}
-                fill={isLiked ? "url(#likeGradient)" : "none"}
+                className={`transition-transform duration-300 ${isLiked ? 'scale-110' : 'scale-100'}`}
+                fill={isLiked ? "currentColor" : "none"}
+                stroke={isLiked ? "currentColor" : "currentColor"}
               />
-              <span>{likeCount}</span>
+              <span className={isLiked ? 'text-[#FF3040]' : ''}>{localLikeCount}</span>
             </button>
             
-            {/* Likes Popup */}
             <AnimatePresence>
               {showLikes && likes.length > 0 && (
                 <motion.div 
@@ -271,7 +280,10 @@ export default function PostCard({
                   
                   <div className="max-h-60 overflow-y-auto">
                     {likes.slice(0, showAllLikes ? likes.length : 5).map((like) => (
-                      <div key={like.userId} className="py-2 border-b border-gray-100 last:border-0">
+                      <div 
+                        key={`${like.userId}_${like.timestamp?.toString()}`} 
+                        className="py-2 border-b border-gray-100 last:border-0"
+                      >
                         <span className="font-medium">{like.displayName}</span>
                       </div>
                     ))}
@@ -293,30 +305,42 @@ export default function PostCard({
           {/* Comment Button */}
           <button
             onClick={toggleComments}
-            className="flex items-center space-x-1 px-2 py-1 rounded hover:bg-gray-100 transition-colors"
+            className="flex items-center space-x-1 px-2 py-1 rounded hover:bg-gray-100 transition-all duration-300"
             aria-label="Comment on post"
             title="Comment on post"
           >
-            <MessageCircle size={20} />
+            <MessageCircle size={20} className="text-gray-600" />
             <span>{commentCount}</span>
           </button>
           
           {/* Repost Button with Popup */}
           <div className="relative">
             <button
-              onClick={handleRepost}
+              onClick={async () => {
+                const prevCount = localRepostCount;
+                setLocalRepostCount(prev => isReposted ? prev - 1 : prev + 1);
+                try {
+                  await handleRepost();
+                } catch (err) {
+                  setLocalRepostCount(prevCount); // Revert on error
+                }
+              }}
               onMouseEnter={() => repostCount > 0 && setShowReposts(true)}
               onMouseLeave={() => setShowReposts(false)}
               disabled={isReposting || !currentUser}
-              className="flex items-center space-x-1 px-2 py-1 rounded hover:bg-gray-100 transition-all duration-300 disabled:opacity-50"
+              className={repostButtonClasses}
               aria-label={isReposted ? "Undo repost" : "Repost"}
               title={isReposted ? "Undo repost" : "Repost"}
             >
-              <Repeat size={20} className={repostColorClass} />
-              <span>{repostCount}</span>
+              <Repeat 
+                size={20}
+                className={`transition-transform duration-300 ${isReposted ? 'scale-110' : 'scale-100'}`}
+                fill={isReposted ? "currentColor" : "none"}
+                stroke={isReposted ? "currentColor" : "currentColor"}
+              />
+              <span className={isReposted ? 'text-[#00C853]' : ''}>{localRepostCount}</span>
             </button>
             
-            {/* Reposts Popup - Could implement once we have a way to get reposters */}
             <AnimatePresence>
               {showReposts && repostCount > 0 && (
                 <motion.div 
@@ -351,14 +375,15 @@ export default function PostCard({
           <button
             onClick={handleSaveToggle}
             disabled={isSaving || !currentUser}
-            className="flex items-center space-x-1 px-2 py-1 rounded hover:bg-gray-100 transition-all duration-300 disabled:opacity-50"
+            className={saveButtonClasses}
             aria-label={isSaved ? "Unsave post" : "Save post"}
             title={isSaved ? "Unsave post" : "Save post"}
           >
             <Bookmark 
               size={20}
-              className={saveColorClass}
-              fill={isSaved ? "url(#saveGradient)" : "none"}
+              className={`transition-transform duration-300 ${isSaved ? 'scale-110' : 'scale-100'}`}
+              fill={isSaved ? "currentColor" : "none"}
+              stroke={isSaved ? "currentColor" : "currentColor"}
             />
           </button>
         </div>

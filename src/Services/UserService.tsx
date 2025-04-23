@@ -442,21 +442,44 @@ export class UserService {
       // Add the current user to the exclusion list
       const excludeUsers = [...followingUids, uid];
       
-      // Query for users not in the exclusion list
+      // Query for users ordered by creation date (newest first)
       const usersRef = collection(db, 'users');
-      const usersQuery = query(usersRef);
+      const usersQuery = query(
+        usersRef,
+        orderBy('createdAt', 'desc')  // Order by creation date, newest first
+      );
       const usersSnap = await getDocs(usersQuery);
       
       const suggestions: UserProfile[] = [];
       
+      // First pass: collect new users (created in the last 7 days)
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      
       usersSnap.forEach(doc => {
         const userData = doc.data() as UserProfile;
         if (!excludeUsers.includes(userData.uid)) {
-          suggestions.push({ ...userData, id: doc.id });
+          const createdAt = userData.createdAt ? new Date(userData.createdAt) : null;
+          if (createdAt && createdAt > sevenDaysAgo) {
+            suggestions.push({ ...userData, id: doc.id });
+          }
         }
       });
-      
-      // Get list of hidden suggestions
+
+      // Second pass: if we need more suggestions, add other users
+      if (suggestions.length < limit) {
+        usersSnap.forEach(doc => {
+          const userData = doc.data() as UserProfile;
+          const createdAt = userData.createdAt ? new Date(userData.createdAt) : null;
+          if (!excludeUsers.includes(userData.uid) && 
+              !suggestions.find(s => s.id === doc.id) &&
+              (!createdAt || createdAt <= sevenDaysAgo)) {
+            suggestions.push({ ...userData, id: doc.id });
+          }
+        });
+      }
+
+      // Get hidden suggestions
       const hiddenSuggestions = await this.getHiddenSuggestions(uid);
       
       // Filter out hidden suggestions
@@ -464,10 +487,8 @@ export class UserService {
         user => !hiddenSuggestions.includes(user.uid)
       );
       
-      // Shuffle and limit the results
-      return filteredSuggestions
-        .sort(() => 0.5 - Math.random())
-        .slice(0, limit);
+      // Return limited results
+      return filteredSuggestions.slice(0, limit);
     } catch (error) {
       console.error('Error getting user suggestions:', error);
       throw error;
