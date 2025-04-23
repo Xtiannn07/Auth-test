@@ -60,25 +60,35 @@ export const PostService = {
     } else if (filter === 'popular') {
       postsQuery = query(
         collection(db, 'posts'), 
-        orderBy('likes', 'desc'),
+        orderBy('likeCount', 'desc'),
         limit(20)
       );
     } else if (filter === 'following' && currentUserId) {
-      const followingQuery = query(
-        collection(db, 'following'), 
-        where('followerId', '==', currentUserId)
-      );
-      const followingSnapshot = await getDocs(followingQuery);
-      const followingIds = followingSnapshot.docs.map(doc => doc.data().followingId);
+      // First get the list of users that currentUser follows
+      const followingUsersRef = collection(db, 'following', currentUserId, 'users');
+      const followingSnapshot = await getDocs(followingUsersRef);
+      const followingIds = followingSnapshot.docs.map(doc => doc.id);
       
       if (followingIds.length === 0) return [];
-      
+
+      // First get all recent posts
       postsQuery = query(
-        collection(db, 'posts'), 
-        where('userId', 'in', followingIds),
+        collection(db, 'posts'),
         orderBy('createdAt', 'desc'),
-        limit(20)
+        limit(50) // Get more posts since we'll filter them
       );
+      
+      // Get the posts and filter them in memory
+      const querySnapshot = await getDocs(postsQuery);
+      const allPosts = querySnapshot.docs.map(doc => ({ 
+        id: doc.id, 
+        ...doc.data() 
+      }));
+      
+      // Filter posts by followed users and return only first 20
+      return allPosts
+        .filter((post: any) => followingIds.includes(post.author?.id))
+        .slice(0, 20);
     } else {
       postsQuery = query(
         collection(db, 'posts'), 
@@ -87,8 +97,11 @@ export const PostService = {
       );
     }
     
-    const querySnapshot = await getDocs(postsQuery);
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    // For non-following queries, return the results directly
+    if (filter !== 'following') {
+      const querySnapshot = await getDocs(postsQuery);
+      return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    }
   },
 
   async fetchUserSuggestions(currentUserId: string) {
