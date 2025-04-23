@@ -5,7 +5,9 @@ import { useProfile } from '../../Contexts/ProfileContext';
 import { UserProfile } from '../../Services/UserService';
 import ProfileEditModal from '../ProfileComponents/ProfileEditModal';
 import UserPosts from '../ProfileComponents/UserPosts';
-import { Loader, Edit } from 'lucide-react';
+import UserReposts from '../ProfileComponents/UserReposts';
+import UserSavedPosts from '../ProfileComponents/UserSavedPosts';
+import { Loader, Edit, BookmarkIcon, RefreshCw, MessageSquare } from 'lucide-react';
 import { UserService } from '../../Services/UserService';
 
 export default function ProfilePage() {
@@ -15,6 +17,7 @@ export default function ProfilePage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
+  const [activeTab, setActiveTab] = useState<'posts' | 'reposts' | 'saved'>('posts');
 
   // Fetch follower and following counts when profile changes
   useEffect(() => {
@@ -121,19 +124,60 @@ export default function ProfilePage() {
         </div>
       )}
       
-      {/* Posts section with UserPosts component */}
-      <div className="mt-6 bg-white p-5 rounded-lg shadow-sm">
-        <h2 className="text-xl font-semibold mb-4 flex items-center">
-          <span className="mr-2">Posts</span>
-          <span className="text-sm font-normal text-gray-500">
-            {currentUser && <span>(Your content and followed users)</span>}
-          </span>
-        </h2>
+      {/* Tab Navigation */}
+      <div className="mt-6 bg-white rounded-lg shadow-sm overflow-hidden">
+        <div className="flex border-b">
+          <button
+            className={`flex-1 py-4 px-2 text-center font-medium flex items-center justify-center space-x-1 ${
+              activeTab === 'posts'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-600 hover:bg-gray-50'
+            }`}
+            onClick={() => setActiveTab('posts')}
+          >
+            <MessageSquare size={18} />
+            <span>Posts</span>
+          </button>
+          
+          <button
+            className={`flex-1 py-4 px-2 text-center font-medium flex items-center justify-center space-x-1 ${
+              activeTab === 'reposts'
+                ? 'text-green-600 border-b-2 border-green-600'
+                : 'text-gray-600 hover:bg-gray-50'
+            }`}
+            onClick={() => setActiveTab('reposts')}
+          >
+            <RefreshCw size={18} />
+            <span>Reposts</span>
+          </button>
+          
+          <button
+            className={`flex-1 py-4 px-2 text-center font-medium flex items-center justify-center space-x-1 ${
+              activeTab === 'saved'
+                ? 'text-amber-600 border-b-2 border-amber-600'
+                : 'text-gray-600 hover:bg-gray-50'
+            }`}
+            onClick={() => setActiveTab('saved')}
+          >
+            <BookmarkIcon size={18} />
+            <span>Saved</span>
+          </button>
+        </div>
         
-        {/* Use the UserPosts component with includeFollowing set to true */}
-        {currentUser && (
-          <UserPosts userId={currentUser.uid} includeFollowing={true} />
-        )}
+        {/* Content based on active tab */}
+        <div className="p-5">
+          {activeTab === 'posts' && profile.uid && (
+            <UserPosts userId={profile.uid} includeFollowing={false} />
+          )}
+          
+          {activeTab === 'reposts' && profile.uid && (
+            <UserReposts userId={profile.uid} />
+          )}
+          
+          {activeTab === 'saved' && profile.uid && (
+            <UserSavedPosts userId={profile.uid} />
+          )}
+        </div>
       </div>
       
       {/* Edit Profile Modal */}

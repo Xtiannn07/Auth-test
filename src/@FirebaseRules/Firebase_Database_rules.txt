@@ -25,6 +25,19 @@ service cloud.firestore {
                       request.auth.uid == userId &&
                       validPostDocument(request.resource.data);
       }
+      
+      // User's reposts subcollection
+      match /reposts/{repostId} {
+        allow read: if true;
+        allow create: if request.auth != null && request.auth.uid == userId;
+        allow delete: if request.auth != null && request.auth.uid == userId;
+      }
+      
+      // User's saved posts subcollection
+      match /savedPosts/{postId} {
+        allow read: if true;
+        allow create, delete: if request.auth != null && request.auth.uid == userId;
+      }
     }
 
     // ==================== FOLLOWING COLLECTION ====================
@@ -63,10 +76,40 @@ service cloud.firestore {
       allow update: if isPostAuthor() && 
                    withinEditWindow() && 
                    onlyUpdatesAllowedPostFields(request.resource.data, resource.data);
+      // Allow counter updates for likes, comments, reposts, and saves
       allow update: if request.auth != null &&
-                   onlyUpdatesLikes(request.resource.data, resource.data) &&
-                   validLikeOperation(request.resource.data.likes, resource.data.likes);
+                   onlyUpdatesEngagementCounts(request.resource.data, resource.data);
       allow delete: if isPostAuthor();
+      
+      // Likes subcollection
+      match /likes/{userId} {
+        allow read: if true;
+        allow create: if request.auth != null && request.auth.uid == userId && validLikeDocument(request.resource.data);
+        allow delete: if request.auth != null && request.auth.uid == userId;
+      }
+      
+      // Comments subcollection
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create: if request.auth != null && 
+                      request.resource.data.author.uid == request.auth.uid && 
+                      validCommentDocument(request.resource.data);
+        allow update: if request.auth != null && 
+                      resource.data.author.uid == request.auth.uid &&
+                      withinCommentEditWindow() &&
+                      onlyUpdatesCommentText(request.resource.data, resource.data);
+        allow delete: if request.auth != null && 
+                      (resource.data.author.uid == request.auth.uid || isPostAuthor());
+      }
+    }
+    
+    // ==================== REPOSTS COLLECTION ====================
+    match /reposts/{repostId} {
+      allow read: if true;
+      allow create: if request.auth != null && 
+                    request.resource.data.repostedBy == request.auth.uid &&
+                    validRepostDocument(request.resource.data);
+      allow delete: if request.auth != null && resource.data.repostedBy == request.auth.uid;
     }
 
     // ==================== HELPER FUNCTIONS ====================
@@ -96,19 +139,21 @@ service cloud.firestore {
       return request.time < resource.data.createdAt + duration.value(24, 'h');
     }
 
+    function withinCommentEditWindow() {
+      return request.time < resource.data.createdAt + duration.value(1, 'h');
+    }
+
     function validPostDocument(data) {
-      return data.keys().hasOnly([
+      return data.keys().hasAll([
         "title",
         "content",
         "author",
-        "likes",
         "createdAt"
       ]) && data.title is string &&
            data.content is string &&
            data.author is map &&
            data.author.id is string &&
            data.author.name is string &&
-           data.likes is list &&
            data.createdAt is timestamp;
     }
 
@@ -116,14 +161,56 @@ service cloud.firestore {
       return newData.diff(oldData).affectedKeys().hasOnly(["title", "content"]);
     }
 
-    function onlyUpdatesLikes(newData, oldData) {
-      return newData.diff(oldData).affectedKeys().hasOnly(["likes"]);
+    function onlyUpdatesEngagementCounts(newData, oldData) {
+      return newData.diff(oldData).affectedKeys().hasAny([
+        "likeCount", 
+        "commentCount", 
+        "repostCount", 
+        "saveCount"
+      ]);
     }
-
-    function validLikeOperation(newLikes, oldLikes) {
-      // Ensure only one like change at a time
-      return newLikes.size() == oldLikes.size() + 1 ||
-             newLikes.size() == oldLikes.size() - 1;
+    
+    function validLikeDocument(data) {
+      return data.keys().hasAll([
+        "userId",
+        "displayName",
+        "timestamp"
+      ]) && 
+      data.userId is string &&
+      data.displayName is string &&
+      data.timestamp is timestamp;
+    }
+    
+    function validCommentDocument(data) {
+      return data.keys().hasAll([
+        "postId",
+        "author",
+        "text",
+        "createdAt"
+      ]) && 
+      data.postId is string &&
+      data.author is map &&
+      data.author.uid is string &&
+      data.author.displayName is string &&
+      data.text is string &&
+      data.createdAt is timestamp;
+    }
+    
+    function onlyUpdatesCommentText(newData, oldData) {
+      return newData.diff(oldData).affectedKeys().hasOnly(["text"]);
+    }
+    
+    function validRepostDocument(data) {
+      return data.keys().hasAll([
+        "originalPostId",
+        "repostedBy",
+        "repostedAt",
+        "originalAuthor"
+      ]) &&
+      data.originalPostId is string &&
+      data.repostedBy is string &&
+      data.repostedAt is timestamp &&
+      data.originalAuthor is map;
     }
 
     // ==================== DEFAULT DENY ====================
