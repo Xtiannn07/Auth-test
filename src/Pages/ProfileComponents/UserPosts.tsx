@@ -4,6 +4,7 @@ import { RootState } from '../../store/store';
 import { PostService } from '../../Services/PostService';
 import PostCard from '../PostComponents/PostCard';
 import { Loader } from 'lucide-react';
+import { useProfile } from '../../Contexts/ProfileContext';
 
 // Define post interface matching PostCard requirements
 interface Post {
@@ -13,6 +14,7 @@ interface Post {
   author: {
     id: string;
     name: string;
+    photoURL?: string;
   };
   createdAt: any;
   likes: string[];
@@ -29,6 +31,7 @@ interface UserPostsProps {
 const UserPosts: React.FC<UserPostsProps> = ({ userId, includeFollowing = false }) => {
   // Get current user from Redux store
   const currentUser = useSelector((state: RootState) => state.auth.currentUser);
+  const { userProfile } = useProfile();
   
   // Use React Query for better cache management and automatic refreshing
   const {
@@ -37,7 +40,7 @@ const UserPosts: React.FC<UserPostsProps> = ({ userId, includeFollowing = false 
     error: queryError,
     refetch
   } = useQuery<Post[]>({
-    queryKey: ['user-posts', userId, includeFollowing],
+    queryKey: ['user-posts', userId, includeFollowing, userProfile?.photoURL],
     queryFn: async () => {
       if (!userId) return [];
       
@@ -47,18 +50,15 @@ const UserPosts: React.FC<UserPostsProps> = ({ userId, includeFollowing = false 
         const fetchedPosts = await PostService.fetchPosts(filter, userId);
         
         // If we're not including followed users, only show the user's posts
-        // Fixed: Make sure we properly filter by author.id while handling types
         let userPosts;
         if (includeFollowing) {
-          userPosts = fetchedPosts;
+          userPosts = fetchedPosts || [];
         } else {
-          // Use type assertion to handle the actual post structure from Firebase
-          userPosts = fetchedPosts.filter((post: any) => 
+          userPosts = (fetchedPosts || []).filter((post: any) => 
             post.author && post.author.id === userId
           );
         }
         
-        // Ensure we cast the result to our Post interface for proper typing
         return userPosts as Post[];
       } catch (err) {
         console.error('Error fetching user posts:', err);
@@ -66,8 +66,7 @@ const UserPosts: React.FC<UserPostsProps> = ({ userId, includeFollowing = false 
       }
     },
     staleTime: 30 * 1000, // Consider data stale after 30 seconds
-    refetchOnWindowFocus: true, // Refetch when window regains focus
-    enabled: !!userId
+    refetchOnWindowFocus: true // Refetch when window regains focus
   });
   
   const error = queryError ? (queryError as Error).message : null;

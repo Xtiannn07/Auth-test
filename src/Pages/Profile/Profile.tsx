@@ -1,8 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
-import { RootState } from '../../store/store';
 import { useProfile } from '../../Contexts/ProfileContext';
-import { UserProfile } from '../../Services/UserService';
 import ProfileEditModal from '../ProfileComponents/ProfileEditModal';
 import UserPosts from '../ProfileComponents/UserPosts';
 import UserReposts from '../ProfileComponents/UserReposts';
@@ -12,8 +9,7 @@ import { Loader, Edit, BookmarkIcon, RefreshCw, MessageSquare } from 'lucide-rea
 import { UserService } from '../../Services/UserService';
 
 export default function ProfilePage() {
-  const currentUser = useSelector((state: RootState) => state.auth.currentUser);
-  const { userProfile: profile, loading, error } = useProfile();
+  const { userProfile: profile, loading, error, refreshProfile } = useProfile();
   
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
@@ -36,9 +32,10 @@ export default function ProfilePage() {
   }, [profile]);
 
   // Update profile after edit
-  const handleProfileUpdate = (updatedProfile: UserProfile) => {
-    // Profile will be updated in context
+  const handleProfileUpdate = async () => {
     setIsEditModalOpen(false);
+    // Refresh the profile to update UI
+    await refreshProfile();
   };
 
   // Loading state

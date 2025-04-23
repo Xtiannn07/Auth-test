@@ -5,6 +5,7 @@ import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import Notification, { NotificationType } from '../../Components/UI/Notifications';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
+import { useProfile } from '../../Contexts/ProfileContext';
 
 interface PostPageProps {
   maxContentLength?: number;
@@ -25,6 +26,7 @@ export default function PostPage({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [shouldRedirect, setShouldRedirect] = useState(false);
   const currentUser = useSelector((state: RootState) => state.auth.currentUser);
+  const { userProfile } = useProfile(); // Get the user's complete profile
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -62,7 +64,7 @@ export default function PostPage({
       return;
     }
 
-    if (!currentUser) {
+    if (!currentUser || !userProfile) {
       setNotification({ type: 'error', message: 'You must be logged in to post' });
       return;
     }
@@ -76,10 +78,15 @@ export default function PostPage({
         content: content.trim(),
         author: {
           id: currentUser.uid,
-          name: currentUser.displayName || currentUser.email?.split('@')[0] || 'Anonymous',
+          name: userProfile.displayName || currentUser.email?.split('@')[0] || 'Anonymous',
+          photoURL: userProfile.photoURL || '' // Use the profile's photoURL
         },
         createdAt: serverTimestamp(),
         likes: [],
+        likeCount: 0,
+        commentCount: 0,
+        repostCount: 0,
+        saveCount: 0
       });
 
       setTitle('');
@@ -107,7 +114,7 @@ export default function PostPage({
     <div className="max-w-2xl mx-auto p-4">
       <h1 className="text-2xl font-bold mb-6">Create a New Post</h1>
 
-      <div>Welcome, {currentUser.displayName || currentUser.email?.split('@')[0] || 'Anonymous'}</div>
+      <div>Welcome, {userProfile?.displayName || currentUser.email?.split('@')[0] || 'Anonymous'}</div>
 
       {notification && (
         <Notification

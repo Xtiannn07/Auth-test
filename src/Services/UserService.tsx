@@ -11,7 +11,8 @@ import {
   orderBy,
   limit,
   runTransaction,
-  deleteDoc
+  deleteDoc,
+  writeBatch
 } from 'firebase/firestore';
 import { db } from './Firebase';
 
@@ -127,6 +128,30 @@ export class UserService {
       
       // Update the profile
       await updateDoc(userProfileRef, updates);
+      
+      // Get all posts by this user and update author info
+      if (updates.displayName || updates.photoURL) {
+        const postsRef = collection(db, 'posts');
+        const q = query(postsRef, where('author.id', '==', uid));
+        const querySnapshot = await getDocs(q);
+        
+        const batch = writeBatch(db);
+        querySnapshot.forEach((postDoc) => {
+          const postRef = doc(db, 'posts', postDoc.id);
+          const updateData: any = {};
+          
+          if (updates.displayName) {
+            updateData['author.name'] = updates.displayName;
+          }
+          if (updates.photoURL !== undefined) {
+            updateData['author.photoURL'] = updates.photoURL;
+          }
+          
+          batch.update(postRef, updateData);
+        });
+        
+        await batch.commit();
+      }
       
       // Return the updated profile
       const updatedProfile = {
