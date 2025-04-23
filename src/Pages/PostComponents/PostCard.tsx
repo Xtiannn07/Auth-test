@@ -136,18 +136,18 @@ export default function PostCard({
     );
   }
   
-  // Generate gradient colors for active states
-  const likeGradientClass = isLiked 
-    ? 'from-purple-500 to-pink-500 text-white' 
-    : 'hover:bg-gray-100 text-gray-600';
+  // Generate color classes for active states - applied to icons instead of buttons
+  const likeColorClass = isLiked 
+    ? 'text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500' 
+    : 'text-gray-600';
     
-  const repostGradientClass = isReposted 
-    ? 'from-green-500 to-teal-500 text-white' 
-    : 'hover:bg-gray-100 text-gray-600';
+  const repostColorClass = isReposted 
+    ? 'text-transparent bg-clip-text bg-gradient-to-r from-green-500 to-teal-500' 
+    : 'text-gray-600';
     
-  const saveGradientClass = isSaved 
-    ? 'from-yellow-400 to-amber-500 text-white' 
-    : 'hover:bg-gray-100 text-gray-600';
+  const saveColorClass = isSaved 
+    ? 'text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-amber-500' 
+    : 'text-gray-600';
   
   return (
     <motion.div
@@ -156,6 +156,24 @@ export default function PostCard({
       transition={{ duration: 0.3, delay: customAnimation?.delay || 0 }}
       className="bg-white rounded-lg shadow p-4 border border-gray-200 mb-4"
     >
+      {/* SVG Gradients for icons */}
+      <svg width="0" height="0" className="hidden">
+        <defs>
+          <linearGradient id="likeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#8B5CF6" />
+            <stop offset="100%" stopColor="#EC4899" />
+          </linearGradient>
+          <linearGradient id="repostGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#10B981" />
+            <stop offset="100%" stopColor="#0D9488" />
+          </linearGradient>
+          <linearGradient id="saveGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#F59E0B" />
+            <stop offset="100%" stopColor="#D97706" />
+          </linearGradient>
+        </defs>
+      </svg>
+
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-4 text-sm">
           {error}
@@ -213,12 +231,14 @@ export default function PostCard({
               onMouseEnter={() => likes.length > 0 && setShowLikes(true)}
               onMouseLeave={() => !showAllLikes && setShowLikes(false)}
               disabled={isLiking || !currentUser}
-              className={`flex items-center space-x-1 px-2 py-1 rounded bg-gradient-to-r ${likeGradientClass} transition-all duration-300 disabled:opacity-50`}
+              className="flex items-center space-x-1 px-2 py-1 rounded hover:bg-gray-100 transition-all duration-300 disabled:opacity-50"
               aria-label={isLiked ? "Unlike post" : "Like post"}
+              title={isLiked ? "Unlike post" : "Like post"}
             >
               <Heart 
                 size={20}
-                fill={isLiked ? "currentColor" : "none"}
+                className={likeColorClass}
+                fill={isLiked ? "url(#likeGradient)" : "none"}
               />
               <span>{likeCount}</span>
             </button>
@@ -275,6 +295,7 @@ export default function PostCard({
             onClick={toggleComments}
             className="flex items-center space-x-1 px-2 py-1 rounded hover:bg-gray-100 transition-colors"
             aria-label="Comment on post"
+            title="Comment on post"
           >
             <MessageCircle size={20} />
             <span>{commentCount}</span>
@@ -287,10 +308,11 @@ export default function PostCard({
               onMouseEnter={() => repostCount > 0 && setShowReposts(true)}
               onMouseLeave={() => setShowReposts(false)}
               disabled={isReposting || !currentUser}
-              className={`flex items-center space-x-1 px-2 py-1 rounded bg-gradient-to-r ${repostGradientClass} transition-all duration-300 disabled:opacity-50`}
+              className="flex items-center space-x-1 px-2 py-1 rounded hover:bg-gray-100 transition-all duration-300 disabled:opacity-50"
               aria-label={isReposted ? "Undo repost" : "Repost"}
+              title={isReposted ? "Undo repost" : "Repost"}
             >
-              <Repeat size={20} />
+              <Repeat size={20} className={repostColorClass} />
               <span>{repostCount}</span>
             </button>
             
@@ -329,12 +351,14 @@ export default function PostCard({
           <button
             onClick={handleSaveToggle}
             disabled={isSaving || !currentUser}
-            className={`flex items-center space-x-1 px-2 py-1 rounded bg-gradient-to-r ${saveGradientClass} transition-all duration-300 disabled:opacity-50`}
+            className="flex items-center space-x-1 px-2 py-1 rounded hover:bg-gray-100 transition-all duration-300 disabled:opacity-50"
             aria-label={isSaved ? "Unsave post" : "Save post"}
+            title={isSaved ? "Unsave post" : "Save post"}
           >
             <Bookmark 
               size={20}
-              fill={isSaved ? "currentColor" : "none"}
+              className={saveColorClass}
+              fill={isSaved ? "url(#saveGradient)" : "none"}
             />
           </button>
         </div>

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
+import { PostLike, Comment, Repost } from '../../Services/PostService';
 import PostCard from '../../Pages/PostComponents/PostCard';
 import UserSuggestion from '../UsersComponents/UserSuggestion';
 import { SkeletonCard, SkeletonUser } from '../../Components/UI/Skeleton';
@@ -9,7 +10,7 @@ import { PostService } from '../../Services/PostService';
 import { UserService } from '../../Services/UserService';
 
 const HomePage = () => {
-  const [activeFilter, setActiveFilter] = useState('latest');
+  const [activeFilter, setActiveFilter] = useState<'latest' | 'popular' | 'following'>('latest');
   const currentUser = useSelector((state: RootState) => state.auth.currentUser);
   const queryClient = useQueryClient();
 
@@ -30,38 +31,22 @@ const HomePage = () => {
     isLoading: suggestionsLoading,
   } = useQuery({
     queryKey: ['userSuggestions'],
-    queryFn: () => currentUser ? UserService.getUserSuggestions(currentUser.uid) : [], // Changed to UserService
+    queryFn: () => currentUser ? UserService.getUserSuggestions(currentUser.uid) : [], 
     staleTime: 5 * 60 * 1000,
     enabled: !!currentUser,
   });
 
-  const handleFilterChange = (filter) => {
+  const handleFilterChange = (filter: 'latest' | 'popular' | 'following') => {
     setActiveFilter(filter);
   };
 
-  const handleLike = async (postId) => {
-    if (!currentUser) return;
-    
-    queryClient.setQueryData(['posts', activeFilter], (oldData) => {
-      if (!oldData) return [];
-      return oldData.map(post => 
-        post.id === postId ? { ...post, likes: post.likes + 1 } : post
-      );
-    });
-    
-    try {
-      await PostService.likePost(postId, currentUser.uid);
-    } catch (error) {
-      console.error('Error liking post:', error);
-      refetchPosts();
-    }
-  };
+  // handleLike is removed as usePostActions now handles likes directly
 
-  const handleFollow = async (userId) => {
+  const handleFollow = async (userId: string) => {
     if (!currentUser) return;
     
     try {
-      await UserService.followUser(currentUser.uid, userId); // Changed to UserService
+      await UserService.followUser(currentUser.uid, userId);
       queryClient.invalidateQueries({ queryKey: ['userSuggestions'] });
     } catch (error) {
       console.error('Error following user:', error);
@@ -70,7 +55,7 @@ const HomePage = () => {
 
   return (
     <div className="max-w-6xl mx-auto p-4">
-      {/* Filter buttons remain the same */}
+      {/* Filter buttons */}
       <div className="bg-white rounded-lg shadow p-4 mb-6">
         <div className="flex space-x-4">
           <button
@@ -126,8 +111,9 @@ const HomePage = () => {
             posts.map((post, index) => (
               <PostCard 
                 key={post.id} 
-                post={post} 
-                onLike={() => handleLike(post.id)}
+                // Use type assertion to convince TypeScript that the post has the required properties
+                post={post as any}
+                currentUser={currentUser}
                 customAnimation={{ delay: index * 0.1 }}
               />
             ))
@@ -151,7 +137,7 @@ const HomePage = () => {
           )}
         </div>
 
-        {/* Right sidebar remains the same */}
+        {/* Right sidebar */}
         <div className="w-full md:w-60 lg:w-96">
           <div className="bg-white rounded-lg shadow p-4 sticky top-4">
             <h3 className="font-medium mb-4 text-lg">Who to follow</h3>
@@ -165,7 +151,7 @@ const HomePage = () => {
                 <UserSuggestion 
                   key={user.id} 
                   user={user} 
-                  onFollow={() => handleFollow(user.id)} 
+                  onFollow={() => user.id && handleFollow(user.id)}
                 />
               ))
             ) : (

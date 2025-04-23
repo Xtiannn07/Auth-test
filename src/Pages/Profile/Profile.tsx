@@ -7,6 +7,7 @@ import ProfileEditModal from '../ProfileComponents/ProfileEditModal';
 import UserPosts from '../ProfileComponents/UserPosts';
 import UserReposts from '../ProfileComponents/UserReposts';
 import UserSavedPosts from '../ProfileComponents/UserSavedPosts';
+import FollowersList from '../ProfileComponents/FollowersList';
 import { Loader, Edit, BookmarkIcon, RefreshCw, MessageSquare } from 'lucide-react';
 import { UserService } from '../../Services/UserService';
 
@@ -18,6 +19,8 @@ export default function ProfilePage() {
   const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
   const [activeTab, setActiveTab] = useState<'posts' | 'reposts' | 'saved'>('posts');
+  const [followListType, setFollowListType] = useState<'followers' | 'following'>('followers');
+  const [isFollowListOpen, setIsFollowListOpen] = useState(false);
 
   // Fetch follower and following counts when profile changes
   useEffect(() => {
@@ -101,20 +104,28 @@ export default function ProfilePage() {
         </button>
       </div>
       
-      {/* Stats section with improved styling */}
+      {/* Stats section with improved styling and clickable followers/following */}
       <div className="flex justify-around py-5 border-b border-gray-200 bg-white shadow-sm">
-        <div className="text-center">
+        <button 
+          onClick={() => {
+            setFollowListType('followers');
+            setIsFollowListOpen(true);
+          }}
+          className="text-center focus:outline-none hover:opacity-75 transition-opacity"
+        >
           <p className="font-bold text-2xl">{followerCount}</p>
           <p className="text-gray-500 text-sm font-medium">Followers</p>
-        </div>
-        <div className="text-center">
+        </button>
+        <button 
+          onClick={() => {
+            setFollowListType('following');
+            setIsFollowListOpen(true);
+          }}
+          className="text-center focus:outline-none hover:opacity-75 transition-opacity"
+        >
           <p className="font-bold text-2xl">{followingCount}</p>
           <p className="text-gray-500 text-sm font-medium">Following</p>
-        </div>
-        <div className="text-center">
-          <p className="font-bold text-2xl">0</p>
-          <p className="text-gray-500 text-sm font-medium">Photos</p>
-        </div>
+        </button>
       </div>
       
       {/* Bio section with improved styling */}
@@ -186,6 +197,16 @@ export default function ProfilePage() {
           profile={profile}
           onClose={() => setIsEditModalOpen(false)}
           onSave={handleProfileUpdate}
+        />
+      )}
+      
+      {/* Followers/Following List Modal */}
+      {profile.uid && (
+        <FollowersList
+          userId={profile.uid}
+          type={followListType}
+          isOpen={isFollowListOpen}
+          onClose={() => setIsFollowListOpen(false)}
         />
       )}
     </div>
