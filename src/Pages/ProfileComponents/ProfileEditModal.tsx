@@ -2,6 +2,7 @@
 import { useState, FormEvent } from 'react';
 import { UserProfile, UserService } from '../../Services/UserService';
 import { X, Camera } from 'lucide-react';
+import ImageSelector from '../../Components/UI/ImageSelector';
 
 interface ProfileEditModalProps {
   profile: UserProfile;
@@ -16,6 +17,7 @@ const ProfileEditModal = ({ profile, onClose, onSave }: ProfileEditModalProps) =
   const [photoURL, setPhotoURL] = useState(profile.photoURL || '');
   const [usernameError, setUsernameError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isImageSelectorOpen, setIsImageSelectorOpen] = useState(false);
 
   // Check if username is available
   const checkUsernameAvailability = async () => {
@@ -45,7 +47,7 @@ const ProfileEditModal = ({ profile, onClose, onSave }: ProfileEditModalProps) =
     
     // Validate
     if (!displayName.trim()) {
-      return; // Don't submit if display name is empty
+      return;
     }
     
     // Check username availability
@@ -55,7 +57,6 @@ const ProfileEditModal = ({ profile, onClose, onSave }: ProfileEditModalProps) =
     setIsSubmitting(true);
     
     try {
-      // Update the profile in the database
       const updatedProfile = await UserService.updateUserProfile(profile.uid, {
         displayName,
         username,
@@ -63,7 +64,6 @@ const ProfileEditModal = ({ profile, onClose, onSave }: ProfileEditModalProps) =
         photoURL
       });
       
-      // Notify parent component about the update
       onSave(updatedProfile);
     } catch (err) {
       console.error('Error updating profile:', err);
@@ -72,10 +72,9 @@ const ProfileEditModal = ({ profile, onClose, onSave }: ProfileEditModalProps) =
     }
   };
 
-  // Simple image URL validator
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const url = e.target.value;
-    setPhotoURL(url);
+  // Handle image selection from ImageSelector
+  const handleImageSelect = (imageUrl: string) => {
+    setPhotoURL(imageUrl);
   };
 
   return (
@@ -115,7 +114,7 @@ const ProfileEditModal = ({ profile, onClose, onSave }: ProfileEditModalProps) =
                     src={photoURL} 
                     alt={displayName} 
                     className="w-full h-full object-cover"
-                    onError={(e) => {
+                    onError={() => {
                       // If image fails to load, show initial instead
                       setPhotoURL('');
                     }}
@@ -126,9 +125,14 @@ const ProfileEditModal = ({ profile, onClose, onSave }: ProfileEditModalProps) =
                   </span>
                 )}
               </div>
-              <div className="absolute bottom-0 right-0 bg-blue-500 rounded-full p-1 cursor-pointer">
+              <button
+                type="button"
+                onClick={() => setIsImageSelectorOpen(true)}
+                className="absolute bottom-0 right-0 bg-blue-500 rounded-full p-2 cursor-pointer hover:bg-blue-600 transition-colors"
+                aria-label="Change profile picture"
+              >
                 <Camera size={16} className="text-white" />
-              </div>
+              </button>
             </div>
           </div>
 
@@ -190,27 +194,17 @@ const ProfileEditModal = ({ profile, onClose, onSave }: ProfileEditModalProps) =
                 {bio.length}/160 characters
               </p>
             </div>
-            
-            {/* Profile Picture URL */}
-            <div>
-              <label htmlFor="photoURL" className="block text-sm font-medium text-gray-700 mb-1">
-                Profile Picture URL
-              </label>
-              <input
-                type="text"
-                id="photoURL"
-                value={photoURL}
-                onChange={handleImageChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="https://example.com/image.jpg"
-              />
-              <p className="text-gray-500 text-xs mt-1">
-                Enter a valid image URL
-              </p>
-            </div>
           </div>
         </form>
       </div>
+
+      {/* Image Selector Modal */}
+      <ImageSelector
+        isOpen={isImageSelectorOpen}
+        onClose={() => setIsImageSelectorOpen(false)}
+        onSelect={handleImageSelect}
+        currentImageUrl={photoURL}
+      />
     </div>
   );
 };
