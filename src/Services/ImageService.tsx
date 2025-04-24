@@ -9,12 +9,12 @@ export interface ProfileImage {
 export class ImageService {
   // Mock profile images data
   private static mockImages: ProfileImage[] = [
-    { id: '1', url: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Caleb', alt: 'Avatar 1' },
-    { id: '2', url: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Oliver&accessories[]', alt: 'Avatar 2' },
-    { id: '3', url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=2', alt: 'Avatar 3' },
-    { id: '4', url: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Wyatt&accessories[]', alt: 'Avatar 4' },
-    { id: '5', url: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Eliza', alt: 'Avatar 5' },
-    { id: '6', url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=6', alt: 'Avatar 6' },
+    { id: '1', url: 'https://api.dicebear.com/9.x/open-peeps/svg?seed=Sadie&skinColor=edb98a,ffdbb4', alt: 'Avatar 1' },
+    { id: '2', url: 'https://api.dicebear.com/9.x/open-peeps/svg?seed=Leah&skinColor=edb98a,ffdbb4', alt: 'Avatar 2' },
+    { id: '3', url: 'https://api.dicebear.com/9.x/open-peeps/svg?seed=Nolan&skinColor=edb98a,ffdbb4', alt: 'Avatar 3' },
+    { id: '4', url: 'https://api.dicebear.com/9.x/open-peeps/svg?seed=Jocelyn&skinColor=edb98a,ffdbb4', alt: 'Avatar 4' },
+    { id: '5', url: 'https://api.dicebear.com/9.x/open-peeps/svg?seed=Emery&skinColor=edb98a,ffdbb4', alt: 'Avatar 5' },
+    { id: '6', url: 'https://api.dicebear.com/9.x/open-peeps/svg?seed=Jade&skinColor=edb98a,ffdbb4', alt: 'Avatar 6' },
     //
     { id: '7', url: 'https://api.dicebear.com/9.x/open-peeps/svg?seed=Leo', alt: 'Avatar 7' },
     { id: '8', url: 'https://api.dicebear.com/9.x/open-peeps/svg?seed=Vivian', alt: 'Avatar 8' },
@@ -29,6 +29,13 @@ export class ImageService {
     { id: '16', url: 'https://api.dicebear.com/9.x/lorelei/svg?seed=Jade', alt: 'Avatar 16' },
     { id: '17', url: 'https://api.dicebear.com/9.x/lorelei/svg?seed=Katherine', alt: 'Avatar 17' },
     { id: '18', url: 'https://api.dicebear.com/9.x/lorelei/svg?seed=Oliver', alt: 'Avatar 18' },
+    //
+    { id: '19', url: 'https://api.dicebear.com/9.x/lorelei/svg?seed=Christian', alt: 'Avatar 19' },
+    { id: '20', url: 'https://api.dicebear.com/9.x/lorelei/svg?seed=Ryker', alt: 'Avatar 20' },
+    { id: '21', url: 'https://api.dicebear.com/9.x/lorelei/svg?seed=Avery', alt: 'Avatar 21' },
+    { id: '22', url: 'https://api.dicebear.com/9.x/lorelei/svg?seed=Vivian', alt: 'Avatar 22' },
+    { id: '23', url: 'https://api.dicebear.com/9.x/lorelei/svg?seed=Destiny', alt: 'Avatar 23' },
+    { id: '24', url: 'https://api.dicebear.com/9.x/lorelei/svg?seed=Sadie', alt: 'Avatar 24' },
   ];
 
   static async getProfileImages(): Promise<ProfileImage[]> {
