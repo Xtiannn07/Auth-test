@@ -5,11 +5,13 @@ interface InputProps {
   id: string;
   name: string;
   type: string;
-  required: boolean;
+  required?: boolean;
   placeholder: string;
   value: string;
   onChange: (e: ChangeEvent<HTMLInputElement>) => void;
   className: string;
+  disabled?: boolean;
+  onBlur?: () => void;
 }
 
 export default function Input({
@@ -20,7 +22,9 @@ export default function Input({
   placeholder,
   value,
   onChange,
-  className
+  className,
+  disabled,
+  onBlur
 }: InputProps) {
   return (
     <input
@@ -31,6 +35,8 @@ export default function Input({
       placeholder={placeholder}
       value={value}
       onChange={onChange}
+      onBlur={onBlur}
+      disabled={disabled}
       className={className}
     />
   );

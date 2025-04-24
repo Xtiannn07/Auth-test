@@ -17,6 +17,7 @@ import {
   onSnapshot
 } from 'firebase/firestore';
 import { db } from './Firebase';
+import UserService from './UserService';
 
 export interface PostLike {
   userId: string;
@@ -70,7 +71,7 @@ export const PostService = {
       const followingIds = followingSnapshot.docs.map(doc => doc.id);
       
       if (followingIds.length === 0) return [];
-
+      
       // First get all recent posts
       postsQuery = query(
         collection(db, 'posts'),
@@ -105,21 +106,12 @@ export const PostService = {
   },
 
   async fetchUserSuggestions(currentUserId: string) {
-    const followingQuery = query(
-      collection(db, 'following'),
-      where('followerId', '==', currentUserId)
-    );
-    const followingSnapshot = await getDocs(followingQuery);
-    const followingIds = followingSnapshot.docs.map(doc => doc.data().followingId);
-    followingIds.push(currentUserId);
-    
-    const usersQuery = query(collection(db, 'users'), limit(10));
-    const usersSnapshot = await getDocs(usersQuery);
-    const users = usersSnapshot.docs
-      .filter(doc => !followingIds.includes(doc.id))
-      .map(doc => ({ id: doc.id, ...doc.data() }));
-    
-    return users.slice(0, 5);
+    try {
+      return await UserService.getUserSuggestions(currentUserId);
+    } catch (error) {
+      console.error('Error fetching user suggestions:', error);
+      return [];
+    }
   },
 
   // === LIKES FUNCTIONALITY ===

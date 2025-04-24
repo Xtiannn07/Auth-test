@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { signUpUser, clearAuthError, signOutUser } from '../store/authSlice';
 import { RootState, AppDispatch } from '../store/store';
-import { UserService } from '../Services/UserService';
+import UserService from '../Services/UserService';
 import { useProfile } from '../Contexts/ProfileContext';
 import Input from '../Components/UI/Input';
 import Button from '../Components/UI/Button';

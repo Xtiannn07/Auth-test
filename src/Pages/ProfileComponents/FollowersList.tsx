@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { UserService, UserProfile } from '../../Services/UserService';
+import { type UserProfile } from '../../Services/UserService';
+import UserService from '../../Services/UserService';
 import { useNavigate } from 'react-router-dom';
 import { X, Search, User } from 'lucide-react';
 

@@ -1,7 +1,8 @@
 import { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store/store';
-import { UserService, UserProfile } from '../Services/UserService';
+import { type UserProfile } from '../Services/UserService';
+import UserService from '../Services/UserService';
 
 interface ProfileContextType {
   userProfile: UserProfile | null;

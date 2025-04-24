@@ -2,12 +2,11 @@ import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
-import { PostLike, Comment, Repost } from '../../Services/PostService';
 import PostCard from '../../Pages/PostComponents/PostCard';
 import UserSuggestion from '../UsersComponents/UserSuggestion';
 import { SkeletonCard, SkeletonUser } from '../../Components/UI/Skeleton';
 import { PostService } from '../../Services/PostService';
-import { UserService } from '../../Services/UserService';
+import UserService from '../../Services/UserService';
 
 const HomePage = () => {
   const [activeFilter, setActiveFilter] = useState<'latest' | 'popular' | 'following'>('latest');

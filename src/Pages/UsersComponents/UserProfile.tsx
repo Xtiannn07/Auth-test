@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
-import { UserService, UserProfile } from '../../Services/UserService';
+import { type UserProfile } from '../../Services/UserService';
+import UserService from '../../Services/UserService';
 import UserPosts from '../ProfileComponents/UserPosts';
 import { Loader } from 'lucide-react';
 

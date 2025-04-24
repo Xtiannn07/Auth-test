@@ -1,5 +1,15 @@
 // src/Components/UI/Button.tsx
-export default function Button({ type, onClick, children, disabled, className }) {
+import { ReactNode, MouseEvent } from 'react';
+
+interface ButtonProps {
+  type?: 'button' | 'submit' | 'reset';
+  onClick?: (event: MouseEvent<HTMLButtonElement>) => void;
+  children: ReactNode;
+  disabled?: boolean;
+  className?: string;
+}
+
+export default function Button({ type, onClick, children, disabled, className }: ButtonProps) {
   return (
     <button
       type={type || 'button'}

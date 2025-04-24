@@ -1,11 +1,12 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
 import SearchHeader from './SearchHeader';
 import UsersCard from '../UsersComponents/UserCard';
 import { SkeletonUser } from '../../Components/UI/Skeleton';
-import { fetchUsers, searchUsers, getHiddenSuggestions, User } from '../SearchComponents/SearchApi';
+import { searchUsers, getHiddenSuggestions, User } from '../SearchComponents/SearchApi';
+import UserService from '../../Services/UserService';
 
 const SearchPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -28,9 +29,13 @@ const SearchPage = () => {
     refetch: refetchSuggested
   } = useQuery({
     queryKey: ['users', 'suggested'],
-    queryFn: () => fetchUsers(10),
+    queryFn: async () => {
+      if (!currentUser) return [];
+      // Use getUserSuggestions to get users not being followed
+      return UserService.getUserSuggestions(currentUser.uid);
+    },
     staleTime: 2 * 60 * 1000, // 2 minutes
-    enabled: !!currentUser,
+    enabled: !!currentUser && !searchTerm,
   });
 
   // Query for search results
@@ -48,26 +53,32 @@ const SearchPage = () => {
 
   // Filter out hidden users and current user
   useEffect(() => {
-    const filterUsers = (users: User[] | undefined) => {
+    const filterUsers = async (users: User[] | undefined) => {
       if (!users) return [];
       if (!currentUser) return users;
-      
+
       return users.filter(user => {
         // Filter out current user
-        if (user.id === currentUser.uid) return false;
+        if (user.uid === currentUser.uid) return false;
         
         // Filter out hidden users
-        if (hiddenUserIds && hiddenUserIds.includes(user.id)) return false;
+        if (hiddenUserIds && user.uid && hiddenUserIds.includes(user.uid)) return false;
         
         return true;
       });
     };
     
-    if (searchTerm.length > 0 && searchResults) {
-      setDisplayedUsers(filterUsers(searchResults));
-    } else if (suggestedUsers) {
-      setDisplayedUsers(filterUsers(suggestedUsers));
-    }
+    const updateDisplayedUsers = async () => {
+      if (searchTerm.length > 0 && searchResults) {
+        // For search results, show all users including followed ones
+        setDisplayedUsers(await filterUsers(searchResults));
+      } else if (suggestedUsers) {
+        // For suggestions, we're already getting filtered users from getUserSuggestions
+        setDisplayedUsers(await filterUsers(suggestedUsers));
+      }
+    };
+
+    updateDisplayedUsers();
   }, [searchTerm, searchResults, suggestedUsers, hiddenUserIds, currentUser]);
 
   // Page visibility change handler
@@ -152,9 +163,9 @@ const SearchPage = () => {
           <div className="space-y-3">
             {displayedUsers.map(user => (
               <UsersCard 
-                key={user.id} 
+                key={user.uid} 
                 user={user} 
-                onCardRemove={() => handleRemoveUser(user.id)}
+                onCardRemove={() => user.uid && handleRemoveUser(user.uid)}
               />
             ))}
           </div>

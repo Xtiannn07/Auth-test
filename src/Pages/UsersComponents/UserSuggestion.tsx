@@ -1,5 +1,5 @@
 // src/Components/UserSuggestion/UserSuggestion.tsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { UserPlus, X } from 'lucide-react';
@@ -7,6 +7,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
 import { followUser, removeUserSuggestion } from '../SearchComponents/SearchApi';
 import Notification from '../../Components/UI/Notifications';
+import UserService from '../../services/UserService';
 
 interface UserSuggestionProps {
   user: {
@@ -29,12 +30,29 @@ const UserSuggestion = ({ user, onFollow, onRemove }: UserSuggestionProps) => {
   const currentUser = useSelector((state: RootState) => state.auth.currentUser);
   const queryClient = useQueryClient();
 
+  // Check initial follow status
+  useEffect(() => {
+    const checkFollowStatus = async () => {
+      if (!currentUser || !user.id) return;
+      try {
+        const following = await UserService.isFollowing(currentUser.uid, user.id);
+        if (following) {
+          // If already following, remove from suggestions
+          handleRemove();
+        }
+      } catch (error) {
+        console.error("Error checking follow status:", error);
+      }
+    };
+    
+    checkFollowStatus();
+  }, [currentUser, user.id]);
+
   const handleFollow = async () => {
     if (!currentUser) return;
     
     setIsLoading(true);
     try {
-      // Use the correct ID - ensure we have a valid target ID
       const targetUserId = user.id || user.uid;
       const success = await followUser(currentUser.uid, targetUserId);
       
@@ -51,7 +69,6 @@ const UserSuggestion = ({ user, onFollow, onRemove }: UserSuggestionProps) => {
         // Handle UI removal with animation
         handleFadeOut();
         
-        // Notify parent component if onFollow callback exists
         if (onFollow) {
           onFollow(targetUserId);
         }

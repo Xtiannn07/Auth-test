@@ -28,7 +28,7 @@ export interface UserProfile {
   id?: string; // Added for compatibility with existing User type
 }
 
-export class UserService {
+class UserService {
   // Create user profile in Firestore
   static async createUserProfile(
     uid: string, 
@@ -457,69 +457,53 @@ export class UserService {
   }
 
   // Get user suggestions (users not followed)
-  static async getUserSuggestions(uid: string, limit: number = 5): Promise<UserProfile[]> {
+  static async getUserSuggestions(currentUserId: string): Promise<UserProfile[]> {
     try {
-      // Get user's following list
-      const followingUsersRef = collection(db, 'following', uid, 'users');
-      const followingSnap = await getDocs(followingUsersRef);
-      const followingUids = followingSnap.docs.map(doc => doc.id);
-
-      // Add the current user to the exclusion list
-      const excludeUsers = [...followingUids, uid];
+      // Get the users that the current user is following from the subcollection
+      const followingUsersRef = collection(db, 'following', currentUserId, 'users');
+      const followingSnapshot = await getDocs(followingUsersRef);
       
-      // Query for users ordered by creation date (newest first)
+      // Extract the ids of users being followed
+      const followingIds = followingSnapshot.docs.map(doc => doc.id);
+      followingIds.push(currentUserId); // Also exclude current user from suggestions
+      
+      // Get users collection ref
       const usersRef = collection(db, 'users');
-      const usersQuery = query(
+      
+      // Get users who aren't being followed
+      const usersSnapshot = await getDocs(query(
         usersRef,
-        orderBy('createdAt', 'desc')  // Order by creation date, newest first
-      );
-      const usersSnap = await getDocs(usersQuery);
+        // If followingIds is empty, use a dummy ID to avoid Firestore error
+        ...(followingIds.length > 0 
+          ? [where('uid', 'not-in', followingIds)]
+          : []), // If no following, don't apply the filter
+        limit(10)
+      ));
       
-      const suggestions: UserProfile[] = [];
-      
-      // First pass: collect new users (created in the last 7 days)
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      
-      usersSnap.forEach(doc => {
-        const userData = doc.data() as UserProfile;
-        if (!excludeUsers.includes(userData.uid)) {
-          const createdAt = userData.createdAt ? new Date(userData.createdAt) : null;
-          if (createdAt && createdAt > sevenDaysAgo) {
-            suggestions.push({ ...userData, id: doc.id });
-          }
-        }
-      });
-
-      // Second pass: if we need more suggestions, add other users
-      if (suggestions.length < limit) {
-        usersSnap.forEach(doc => {
-          const userData = doc.data() as UserProfile;
-          const createdAt = userData.createdAt ? new Date(userData.createdAt) : null;
-          if (!excludeUsers.includes(userData.uid) && 
-              !suggestions.find(s => s.id === doc.id) &&
-              (!createdAt || createdAt <= sevenDaysAgo)) {
-            suggestions.push({ ...userData, id: doc.id });
-          }
-        });
-      }
-
-      // Get hidden suggestions
-      const hiddenSuggestions = await this.getHiddenSuggestions(uid);
-      
-      // Filter out hidden suggestions
-      const filteredSuggestions = suggestions.filter(
-        user => !hiddenSuggestions.includes(user.uid)
-      );
-      
-      // Return limited results
-      return filteredSuggestions.slice(0, limit);
+      return usersSnapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() } as UserProfile))
+        .filter(user => user.uid !== currentUserId); // Extra safety check
     } catch (error) {
-      console.error('Error getting user suggestions:', error);
-      throw error;
+      console.error('Error fetching user suggestions:', error);
+      return [];
     }
   }
-  
+
+  // Helper method to get list of users being followed by current user
+  static async getFollowingIds(userId: string): Promise<string[]> {
+    try {
+      const followingSnapshot = await getDocs(query(
+        collection(db, 'following'),
+        where('followerId', '==', userId)
+      ));
+      
+      return followingSnapshot.docs.map(doc => doc.data().followingId);
+    } catch (error) {
+      console.error('Error getting following ids:', error);
+      return [];
+    }
+  }
+
   // Get hidden suggestions
   static async getHiddenSuggestions(currentUserId: string): Promise<string[]> {
     try {
@@ -551,3 +535,5 @@ export class UserService {
     }
   }
 }
+
+export default UserService;

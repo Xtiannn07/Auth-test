@@ -6,7 +6,7 @@ import UserReposts from '../ProfileComponents/UserReposts';
 import UserSavedPosts from '../ProfileComponents/UserSavedPosts';
 import FollowersList from '../ProfileComponents/FollowersList';
 import { Loader, Edit, BookmarkIcon, RefreshCw, MessageSquare } from 'lucide-react';
-import { UserService } from '../../Services/UserService';
+import UserService from '../../Services/UserService';
 
 export default function ProfilePage() {
   const { userProfile: profile, loading, error, refreshProfile } = useProfile();

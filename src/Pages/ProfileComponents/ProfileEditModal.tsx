@@ -1,6 +1,7 @@
 // src/Pages/Profile/ProfileEditModal.tsx
 import { useState, FormEvent } from 'react';
-import { UserProfile, UserService } from '../../Services/UserService';
+import { type UserProfile } from '../../Services/UserService';
+import UserService from '../../Services/UserService';
 import { X, Camera } from 'lucide-react';
 import ImageSelector from '../../Components/UI/ImageSelector';
 

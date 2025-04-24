@@ -1,6 +1,7 @@
 // src/Pages/Search/api.ts
+import { type UserProfile } from '../../Services/UserService';
+import UserService from '../../Services/UserService';
 import { User as FirebaseUser } from 'firebase/auth';
-import { UserService, UserProfile } from '../../Services/UserService';
 
 // Use the User interface from UserService
 export type User = UserProfile;
