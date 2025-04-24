@@ -13,35 +13,10 @@ interface ProfileEditModalProps {
 
 const ProfileEditModal = ({ profile, onClose, onSave }: ProfileEditModalProps) => {
   const [displayName, setDisplayName] = useState(profile.displayName || '');
-  const [username, setUsername] = useState(profile.username || '');
   const [bio, setBio] = useState(profile.bio || '');
   const [photoURL, setPhotoURL] = useState(profile.photoURL || '');
-  const [usernameError, setUsernameError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isImageSelectorOpen, setIsImageSelectorOpen] = useState(false);
-
-  // Check if username is available
-  const checkUsernameAvailability = async () => {
-    if (!username || username === profile.username) {
-      setUsernameError('');
-      return true;
-    }
-    
-    try {
-      const isAvailable = await UserService.isUsernameAvailable(username, profile.uid);
-      if (!isAvailable) {
-        setUsernameError('Username is already taken');
-        return false;
-      } else {
-        setUsernameError('');
-        return true;
-      }
-    } catch (err) {
-      console.error('Error checking username:', err);
-      setUsernameError('Error checking username availability');
-      return false;
-    }
-  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -51,16 +26,11 @@ const ProfileEditModal = ({ profile, onClose, onSave }: ProfileEditModalProps) =
       return;
     }
     
-    // Check username availability
-    const isUsernameValid = await checkUsernameAvailability();
-    if (!isUsernameValid) return;
-    
     setIsSubmitting(true);
     
     try {
       const updatedProfile = await UserService.updateUserProfile(profile.uid, {
         displayName,
-        username,
         bio,
         photoURL
       });
@@ -94,9 +64,9 @@ const ProfileEditModal = ({ profile, onClose, onSave }: ProfileEditModalProps) =
           </div>
           <button
             onClick={handleSubmit}
-            disabled={isSubmitting || !displayName.trim() || !!usernameError}
+            disabled={isSubmitting || !displayName.trim()}
             className={`px-4 py-1 rounded-full text-sm font-medium ${
-              isSubmitting || !displayName.trim() || !!usernameError
+              isSubmitting || !displayName.trim()
               ? 'bg-gray-200 text-gray-500'
               : 'bg-blue-500 text-white hover:bg-blue-600'
             }`}
@@ -155,26 +125,19 @@ const ProfileEditModal = ({ profile, onClose, onSave }: ProfileEditModalProps) =
               />
             </div>
             
-            {/* Username */}
+            {/* Username (read-only) */}
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Username
               </label>
               <input
                 type="text"
-                id="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                onBlur={checkUsernameAvailability}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                maxLength={15}
-                required
+                value={profile.username}
+                className="w-full px-3 py-2 border border-gray-100 rounded-lg bg-gray-50 text-gray-500"
+                disabled
               />
-              {usernameError && (
-                <p className="text-red-500 text-xs mt-1">{usernameError}</p>
-              )}
               <p className="text-gray-500 text-xs mt-1">
-                Only letters, numbers, and underscores are allowed
+                Username cannot be changed
               </p>
             </div>
             

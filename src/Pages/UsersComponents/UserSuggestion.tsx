@@ -7,7 +7,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
 import { followUser, removeUserSuggestion } from '../SearchComponents/SearchApi';
 import Notification from '../../Components/UI/Notifications';
-import UserService from '../../services/UserService';
+import UserService from '../../Services/UserService';
 
 interface UserSuggestionProps {
   user: {
@@ -164,12 +164,12 @@ const UserSuggestion = ({ user, onFollow, onRemove }: UserSuggestionProps) => {
               transition-all duration-200`}
             aria-label={isFollowing ? "Following" : "Follow"}
           >
-            {!isFollowing && <UserPlus size={16} className="mr-1" />}
+            {!isFollowing && <UserPlus size={16} className={isFollowing ? '' : 'md:mr-0 lg:mr-1 mr-1'} />}
             {isLoading 
               ? '...' 
               : isFollowing 
                 ? 'Following' 
-                : 'Follow'}
+                : <span className="md:hidden lg:inline">Follow</span>}
           </button>
           
           <button

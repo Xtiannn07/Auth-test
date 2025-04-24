@@ -4,11 +4,5 @@
     background: linear-gradient(90deg, #f0f3ff 0%, #eef1f8 50%, #e6e8ed 100%);
 }
 
-.icon-gradient {
-    stroke: url(#icon-gradient);
-    fill: none;
-    stroke-width: 2;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-  }
+
 

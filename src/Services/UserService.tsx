@@ -115,22 +115,14 @@ class UserService {
       
       const currentProfile = currentProfileSnap.data() as UserProfile;
       
-      // If username is being updated, update the username mapping
-      if (updates.username && updates.username !== currentProfile.username) {
-        // Remove old username mapping
-        if (currentProfile.username) {
-          await this.removeUsernameMapping(currentProfile.username);
-        }
-        
-        // Add new username mapping
-        await this.setUsernameMapping(updates.username, uid);
-      }
+      // Remove username from updates to ensure immutability
+      const { username, ...safeUpdates } = updates;
       
       // Update the profile
-      await updateDoc(userProfileRef, updates);
+      await updateDoc(userProfileRef, safeUpdates);
       
       // Get all posts by this user and update author info
-      if (updates.displayName || updates.photoURL) {
+      if (safeUpdates.displayName || safeUpdates.photoURL) {
         const postsRef = collection(db, 'posts');
         const q = query(postsRef, where('author.id', '==', uid));
         const querySnapshot = await getDocs(q);
@@ -140,11 +132,11 @@ class UserService {
           const postRef = doc(db, 'posts', postDoc.id);
           const updateData: any = {};
           
-          if (updates.displayName) {
-            updateData['author.name'] = updates.displayName;
+          if (safeUpdates.displayName) {
+            updateData['author.name'] = safeUpdates.displayName;
           }
-          if (updates.photoURL !== undefined) {
-            updateData['author.photoURL'] = updates.photoURL;
+          if (safeUpdates.photoURL !== undefined) {
+            updateData['author.photoURL'] = safeUpdates.photoURL;
           }
           
           batch.update(postRef, updateData);
@@ -156,7 +148,7 @@ class UserService {
       // Return the updated profile
       const updatedProfile = {
         ...currentProfile,
-        ...updates
+        ...safeUpdates
       };
       
       // Ensure id field is set for compatibility

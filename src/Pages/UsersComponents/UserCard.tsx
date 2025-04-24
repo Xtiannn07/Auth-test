@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
 import UsersActionButtons from './UsersActionButtons';
 import { User, isUserFollowed } from '../SearchComponents/SearchApi';
@@ -42,25 +42,21 @@ const UsersCard: React.FC<UsersCardProps> = ({ user, onCardRemove }) => {
   };
   
   const handleRemove = () => {
-    if (!isVisible) return; // Prevent multiple removals
-    
+    if (!isVisible) return;
     setIsRemoving(true);
     setTimeout(() => {
       setIsVisible(false);
       if (onCardRemove) {
         onCardRemove();
       }
-    }, 300); // Match the CSS transition duration
+    }, 300);
   };
 
   if (!isVisible) {
     return null;
   }
 
-  // Username display - use username, or email without domain if no username
   const displayUsername = user.username || (user.email ? user.email.split('@')[0] : 'User');
-  
-  // Get initial letter for avatar placeholder
   const userInitial = user.displayName 
     ? user.displayName.charAt(0).toUpperCase() 
     : user.username 
@@ -71,16 +67,17 @@ const UsersCard: React.FC<UsersCardProps> = ({ user, onCardRemove }) => {
 
   return (
     <div 
-      className={`bg-white rounded-lg shadow-sm p-4 mb-3 flex items-center justify-between
+      className={`bg-white rounded-lg shadow-sm p-3 sm:p-4 mb-3 flex items-center justify-between
         ${isRemoving ? 'transform translate-x-full opacity-0' : 'transform translate-x-0 opacity-100'}
-        transition-all duration-300 ease-out
+        transition-all duration-300 ease-out hover:bg-gray-50
       `}
     >
       <Link 
         to={`/user/${user.id}`} 
-        className="flex items-center flex-1"
+        className="flex items-center flex-1 min-w-0 group"
       >
-        <div className="w-12 h-12 rounded-full bg-gray-200 mr-4 flex items-center justify-center">
+        {/* Profile image - smaller on mobile */}
+        <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gray-200 mr-3 sm:mr-4 flex-shrink-0 flex items-center justify-center border border-gray-100 overflow-hidden shadow-sm group-hover:shadow-md transition-shadow">
           {user.photoURL ? (
             <img 
               src={user.photoURL} 
@@ -88,32 +85,36 @@ const UsersCard: React.FC<UsersCardProps> = ({ user, onCardRemove }) => {
               className="w-full h-full rounded-full object-cover"
             />
           ) : (
-            <span className="text-gray-600 font-medium text-lg">
+            <span className="text-gray-600 font-medium text-base sm:text-lg">
               {userInitial}
             </span>
           )}
         </div>
         
-        <div>
-          <h3 className="font-medium text-gray-900">
+        <div className="min-w-0 flex-1 space-y-0.5">
+          <h3 className="font-semibold text-gray-900 text-sm sm:text-base truncate group-hover:text-blue-600 transition-colors">
             {user.displayName || displayUsername}
           </h3>
-          <p className="text-gray-500 text-sm">@{displayUsername}</p>
-          {user.email && (
-            <p className="text-gray-600 text-sm mt-1 truncate">{user.email}</p>
+          <p className="text-gray-500 text-xs sm:text-sm truncate">@{displayUsername}</p>
+          {user.bio && (
+            <p className="text-gray-600 text-xs sm:text-sm truncate mt-0.5 hidden sm:block">
+              {user.bio}
+            </p>
           )}
         </div>
       </Link>
       
-      <UsersActionButtons 
-        userId={user.id || user.uid}
-        username={user.username}
-        displayName={user.displayName}
-        isFollowing={isFollowing}
-        onFollowStatusChange={handleFollowStatusChange}
-        onRemove={handleRemove}
-        isLoading={isLoading}
-      />
+      <div className="ml-3 sm:ml-4 flex-shrink-0">
+        <UsersActionButtons 
+          userId={user.id || user.uid}
+          username={user.username}
+          displayName={user.displayName}
+          isFollowing={isFollowing}
+          onFollowStatusChange={handleFollowStatusChange}
+          onRemove={handleRemove}
+          isLoading={isLoading}
+        />
+      </div>
     </div>
   );
 };

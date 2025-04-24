@@ -50,7 +50,7 @@ export default function ProfilePage() {
   // Error state
   if (error || !profile) {
     return (
-      <div className="max-w-2xl mx-auto p-4">
+      <div className="max-w-6xl mx-auto p-4">
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
           <p className="text-red-500">{error || 'Profile not found'}</p>
         </div>
@@ -62,118 +62,111 @@ export default function ProfilePage() {
   const displayUsername = profile.username || (profile.email ? profile.email.split('@')[0] : 'User');
 
   return (
-    <div className="max-w-2xl mx-auto pb-8">
-      {/* Enhanced header with gradient background */}
-      <div className="bg-gradient-to-r from-blue-900 to-purple-900 text-white p-6 rounded-b-lg relative">
-        <div className="flex items-end space-x-5 pb-4">
-          {/* Profile image - larger size with subtle shadow */}
-          <div className="w-24 h-24 rounded-full border-4 border-white overflow-hidden bg-gray-200 shadow-lg">
-            {profile.photoURL ? (
-              <img 
-                src={profile.photoURL} 
-                alt={profile.displayName || displayUsername} 
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full bg-gray-300"></div>
+    <div className="max-w-6xl mx-auto pb-4 sm:pb-8">
+      {/* Modern header with subtle gradient background */}
+      <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-white p-4 sm:p-6 rounded-b-lg relative">
+        <div className="flex flex-col space-y-3 sm:space-y-4">
+          <div className="flex justify-between items-start">
+            {/* Profile image with improved shadow - smaller on mobile */}
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-white/20 overflow-hidden bg-gray-200 shadow-xl">
+              {profile.photoURL ? (
+                <img 
+                  src={profile.photoURL} 
+                  alt={profile.displayName || displayUsername} 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gray-300"></div>
+              )}
+            </div>
+
+            {/* Edit profile button - smaller on mobile */}
+            <button 
+              onClick={() => setIsEditModalOpen(true)}
+              className="px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium bg-white/10 text-white hover:bg-white/20 transition-colors flex items-center backdrop-blur-sm border border-white/10"
+            >
+              <Edit size={12} className="mr-1 sm:mr-1.5" />
+              Edit
+            </button>
+          </div>
+
+          {/* User info with improved layout - smaller text on mobile */}
+          <div className="space-y-0.5 sm:space-y-1">
+            <h1 className="text-xl sm:text-2xl font-bold">{profile.displayName || displayUsername}</h1>
+            <p className="text-xs sm:text-sm text-white/70">@{displayUsername}</p>
+            {profile.bio && (
+              <p className="text-xs sm:text-sm text-white/90 mt-1 sm:mt-2 leading-relaxed">{profile.bio}</p>
             )}
           </div>
 
-          {/* User info with improved typography */}
-          <div>
-            <h1 className="text-3xl font-bold">{profile.displayName || displayUsername}</h1>
-            <p className="text-sm opacity-80 font-medium">
-              Kunware Tga New York ako
-            </p>
-            <p className="text-sm opacity-70 mt-1">
-              @{displayUsername}
-            </p>
+          {/* Threads-style followers count - smaller on mobile */}
+          <div className="flex items-center space-x-3 sm:space-x-4 text-xs sm:text-sm text-white/80">
+            <button 
+              onClick={() => {
+                setFollowListType('followers');
+                setIsFollowListOpen(true);
+              }}
+              className="hover:text-white transition-colors flex items-center space-x-1"
+            >
+              <span className="font-semibold">{followerCount}</span>
+              <span className="text-white/60">followers</span>
+            </button>
+            <button 
+              onClick={() => {
+                setFollowListType('following');
+                setIsFollowListOpen(true);
+              }}
+              className="hover:text-white transition-colors flex items-center space-x-1"
+            >
+              <span className="font-semibold">{followingCount}</span>
+              <span className="text-white/60">following</span>
+            </button>
           </div>
         </div>
-
-        {/* Edit profile button */}
-        <button 
-          onClick={() => setIsEditModalOpen(true)}
-          className="absolute right-6 bottom-6 px-6 py-2 rounded-full text-sm font-medium bg-white text-purple-900 hover:bg-gray-100 transition-colors flex items-center"
-        >
-          <Edit size={16} className="mr-2" />
-          Edit Profile
-        </button>
       </div>
       
-      {/* Stats section with improved styling and clickable followers/following */}
-      <div className="flex justify-around py-5 border-b border-gray-200 bg-white shadow-sm">
-        <button 
-          onClick={() => {
-            setFollowListType('followers');
-            setIsFollowListOpen(true);
-          }}
-          className="text-center focus:outline-none hover:opacity-75 transition-opacity"
-        >
-          <p className="font-bold text-2xl">{followerCount}</p>
-          <p className="text-gray-500 text-sm font-medium">Followers</p>
-        </button>
-        <button 
-          onClick={() => {
-            setFollowListType('following');
-            setIsFollowListOpen(true);
-          }}
-          className="text-center focus:outline-none hover:opacity-75 transition-opacity"
-        >
-          <p className="font-bold text-2xl">{followingCount}</p>
-          <p className="text-gray-500 text-sm font-medium">Following</p>
-        </button>
-      </div>
-      
-      {/* Bio section with improved styling */}
-      {profile.bio && (
-        <div className="p-5 bg-white mt-4 rounded-lg shadow-sm">
-          <p className="text-gray-700 leading-relaxed">{profile.bio}</p>
-        </div>
-      )}
-      
-      {/* Tab Navigation */}
-      <div className="mt-6 bg-white rounded-lg shadow-sm overflow-hidden">
+      {/* Modern Tab Navigation - smaller on mobile */}
+      <div className="mt-3 sm:mt-4 bg-white rounded-lg shadow-sm overflow-hidden">
         <div className="flex border-b">
           <button
-            className={`flex-1 py-4 px-2 text-center font-medium flex items-center justify-center space-x-1 ${
+            className={`flex-1 py-2 sm:py-3 px-2 text-center text-xs sm:text-sm font-medium flex items-center justify-center space-x-1 transition-colors ${
               activeTab === 'posts'
-                ? 'text-blue-600 border-b-2 border-blue-600'
-                : 'text-gray-600 hover:bg-gray-50'
+                ? 'text-black border-b-2 border-black'
+                : 'text-gray-500 hover:text-gray-800'
             }`}
             onClick={() => setActiveTab('posts')}
           >
-            <MessageSquare size={18} />
+            <MessageSquare size={14} className="sm:w-4 sm:h-4" />
             <span>Posts</span>
           </button>
           
           <button
-            className={`flex-1 py-4 px-2 text-center font-medium flex items-center justify-center space-x-1 ${
+            className={`flex-1 py-2 sm:py-3 px-2 text-center text-xs sm:text-sm font-medium flex items-center justify-center space-x-1 transition-colors ${
               activeTab === 'reposts'
-                ? 'text-green-600 border-b-2 border-green-600'
-                : 'text-gray-600 hover:bg-gray-50'
+                ? 'text-black border-b-2 border-black'
+                : 'text-gray-500 hover:text-gray-800'
             }`}
             onClick={() => setActiveTab('reposts')}
           >
-            <RefreshCw size={18} />
+            <RefreshCw size={14} className="sm:w-4 sm:h-4" />
             <span>Reposts</span>
           </button>
           
           <button
-            className={`flex-1 py-4 px-2 text-center font-medium flex items-center justify-center space-x-1 ${
+            className={`flex-1 py-2 sm:py-3 px-2 text-center text-xs sm:text-sm font-medium flex items-center justify-center space-x-1 transition-colors ${
               activeTab === 'saved'
-                ? 'text-amber-600 border-b-2 border-amber-600'
-                : 'text-gray-600 hover:bg-gray-50'
+                ? 'text-black border-b-2 border-black'
+                : 'text-gray-500 hover:text-gray-800'
             }`}
             onClick={() => setActiveTab('saved')}
           >
-            <BookmarkIcon size={18} />
+            <BookmarkIcon size={14} className="sm:w-4 sm:h-4" />
             <span>Saved</span>
           </button>
         </div>
         
-        {/* Content based on active tab */}
-        <div className="p-5">
+        {/* Content based on active tab - adjusted padding for mobile */}
+        <div className="p-3 sm:p-5">
           {activeTab === 'posts' && profile.uid && (
             <UserPosts userId={profile.uid} includeFollowing={false} />
           )}

@@ -35,52 +35,64 @@ export function ActionButtons({
   isSaving
 }: ActionButtonsProps) {
   return (
-    <div className="flex items-center space-x-6">
+    <div className="flex items-center justify-between sm:justify-start sm:space-x-6">
       {/* Like Button */}
       <button 
         onClick={onLikeToggle}
         disabled={isLiking || !currentUser}
-        className={`flex items-center space-x-1 px-2 py-1 rounded ${
-          isLiked ? 'text-blue-600' : 'hover:bg-gray-100'
-        } transition-colors disabled:opacity-50`}
+        className={`group flex items-center space-x-1 p-2 sm:px-3 sm:py-2 rounded-full
+          ${isLiked ? 'text-blue-600' : 'hover:bg-gray-100'}
+          transition-all duration-200 disabled:opacity-50 touch-manipulation`}
         aria-label={isLiked ? "Unlike post" : "Like post"}
       >
-        <Heart fill={isLiked ? "currentColor" : "none"} size={20} />
-        <span>{post.likes.length}</span>
+        <Heart 
+          className={` transition-transform group-hover:scale-110 ${isLiked ? 'scale-110' : ''}`}
+          fill={isLiked ? "currentColor" : "none"} 
+        />
+        <span className="text-sm sm:text-base">{post.likes.length}</span>
       </button>
       
       {/* Comment Button */}
       <button
         onClick={onComment}
         disabled={!currentUser}
-        className="flex items-center space-x-1 px-2 py-1 rounded hover:bg-gray-100 transition-colors disabled:opacity-50"
+        className="group flex items-center space-x-1 p-2 sm:px-3 sm:py-2 rounded-full hover:bg-gray-100 
+          transition-all duration-200 disabled:opacity-50 touch-manipulation"
         aria-label="Comment on post"
       >
-        <MessageSquare size={20} />
-        <span>{post.comments?.length || 0}</span>
+        <MessageSquare 
+          className=" transition-transform group-hover:scale-110" 
+        />
+        <span className="text-sm sm:text-base">{post.comments?.length || 0}</span>
       </button>
       
       {/* Repost Button */}
       <button
         onClick={onRepost}
         disabled={isReposting || !currentUser}
-        className="flex items-center space-x-1 px-2 py-1 rounded hover:bg-gray-100 transition-colors disabled:opacity-50"
+        className="group flex items-center space-x-1 p-2 sm:px-3 sm:py-2 rounded-full hover:bg-gray-100 
+          transition-all duration-200 disabled:opacity-50 touch-manipulation"
         aria-label="Repost"
       >
-        <Repeat2 size={20} />
-        <span>{post.reposts || 0}</span>
+        <Repeat2 
+          className=" transition-transform group-hover:scale-110" 
+        />
+        <span className="text-sm sm:text-base">{post.reposts || 0}</span>
       </button>
       
       {/* Save Button */}
       <button
         onClick={onSaveToggle}
         disabled={isSaving || !currentUser}
-        className={`flex items-center space-x-1 px-2 py-1 rounded ${
-          isSaved ? 'text-yellow-600' : 'hover:bg-gray-100'
-        } transition-colors disabled:opacity-50`}
+        className={`group flex items-center space-x-1 p-2 sm:px-3 sm:py-2 rounded-full
+          ${isSaved ? 'text-yellow-600' : 'hover:bg-gray-100'}
+          transition-all duration-200 disabled:opacity-50 touch-manipulation`}
         aria-label={isSaved ? "Unsave post" : "Save post"}
       >
-        <Bookmark fill={isSaved ? "currentColor" : "none"} size={20} />
+        <Bookmark 
+          className={` transition-transform group-hover:scale-110 ${isSaved ? 'scale-110' : ''}`}
+          fill={isSaved ? "currentColor" : "none"} 
+        />
       </button>
     </div>
   );

@@ -156,9 +156,9 @@ export default function PostCard({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: customAnimation?.delay || 0 }}
-      className="bg-white rounded-lg shadow p-4 border border-gray-200 mb-4"
+      className="bg-white rounded-lg shadow p-3 sm:p-4 md:p-5 border border-gray-200 mb-3 sm:mb-4"
     >
-      {/* SVG Gradients for icons - update color stops */}
+      {/* SVG Gradients for icons */}
       <svg width="0" height="0" className="hidden">
         <defs>
           <linearGradient id="likeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -183,10 +183,10 @@ export default function PostCard({
       )}
       
       {/* Post Header */}
-      <div className="flex justify-between items-start mb-3">
+      <div className="flex justify-between items-start mb-1 sm:mb-2 md:mb-3">
         <div className="flex items-start flex-1">
-          {/* Author Image and Info */}
-          <div className="w-10 h-10 rounded-full bg-gray-200 flex-shrink-0 flex items-center justify-center overflow-hidden">
+          {/* Author Image */}
+          <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-16 md:h-16 rounded-full bg-gray-200 flex-shrink-0 flex items-center justify-center overflow-hidden">
             {post.author.photoURL ? (
               <img 
                 src={post.author.photoURL} 
@@ -198,16 +198,16 @@ export default function PostCard({
                 }}
               />
             ) : (
-              <span className="text-gray-600 font-medium text-lg">
+              <span className="text-gray-600 font-medium text-sm sm:text-base md:text-lg">
                 {post.author.name.charAt(0).toUpperCase() || 'U'}
               </span>
             )}
           </div>
-          <div className="ml-3 flex-1">
-            <h3 className="text-xl font-semibold">{post.title}</h3>
-            <div className="flex items-center text-sm text-gray-600">
+          <div className="ml-2 sm:ml-3 flex-1">
+            <h3 className="text-base sm:text-lg md:text-xl font-semibold">{post.title}</h3>
+            <div className="flex items-center text-xs sm:text-sm text-gray-600">
               <span className="font-medium">{post.author.name}</span>
-              <span className="mx-2">•</span>
+              <span className="mx-1 sm:mx-2">•</span>
               <span>{formattedDate}</span>
             </div>
           </div>
@@ -241,10 +241,10 @@ export default function PostCard({
       </div>
       
       {/* Post Content */}
-      <p className="mb-4 text-gray-700 whitespace-pre-wrap">{displayContent}</p>
+      <p className="mb-1 sm:mb-2 text-sm sm:text-base text-gray-700 whitespace-pre-wrap">{displayContent}</p>
       
       {/* Action Buttons */}
-      <div className="flex justify-end items-center space-x-6 border-t pt-3">
+      <div className="flex justify-end  sm:space-x-4 md:space-x-6 border-t pt-1">
         {/* Like Button with Popup */}
         <div className="relative">
           <button 
@@ -254,23 +254,23 @@ export default function PostCard({
               try {
                 await handleLikeToggle();
               } catch (err) {
-                setLocalLikeCount(prevCount); // Revert on error
+                setLocalLikeCount(prevCount);
               }
             }}
             onMouseEnter={() => likes.length > 0 && setShowLikes(true)}
             onMouseLeave={() => !showAllLikes && setShowLikes(false)}
             disabled={isLiking || !currentUser}
-            className={likeButtonClasses}
+            className={`${likeButtonClasses} text-xs sm:text-sm md:text-base`}
             aria-label={isLiked ? "Unlike post" : "Like post"}
             title={isLiked ? "Unlike post" : "Like post"}
           >
             <Heart 
-              size={20}
-              className={`transition-transform duration-300 ${isLiked ? 'scale-110' : 'scale-100'}`}
+              size={16}
+              className={`transition-transform duration-300 sm:w-5 sm:h-5 md:w-6 md:h-6 ${isLiked ? 'scale-110' : 'scale-100'}`}
               fill={isLiked ? "currentColor" : "none"}
               stroke={isLiked ? "currentColor" : "currentColor"}
             />
-            <span className={isLiked ? 'text-[#FF3040]' : ''}>{localLikeCount}</span>
+            <span className={isLiked ? 'text-[#FF3040] ml-1' : 'ml-1'}>{localLikeCount}</span>
           </button>
           
           <AnimatePresence>
@@ -325,12 +325,12 @@ export default function PostCard({
         {/* Comment Button */}
         <button
           onClick={toggleComments}
-          className="flex items-center space-x-1 px-2 py-1 rounded hover:bg-gray-100 transition-all duration-300"
+          className="flex items-center space-x-1 px-2 py-1 rounded hover:bg-gray-100 transition-all duration-300 text-xs sm:text-sm md:text-base"
           aria-label="Comment on post"
           title="Comment on post"
         >
-          <MessageCircle size={20} className="text-gray-600" />
-          <span>{commentCount}</span>
+          <MessageCircle size={16} className="text-gray-600 sm:w-5 sm:h-5 md:w-6 md:h-6" />
+          <span className="ml-1">{commentCount}</span>
         </button>
         
         {/* Repost Button */}
@@ -341,34 +341,34 @@ export default function PostCard({
             try {
               await handleRepost();
             } catch (err) {
-              setLocalRepostCount(prevCount); // Revert on error
+              setLocalRepostCount(prevCount);
             }
           }}
           disabled={isReposting || !currentUser}
-          className={repostButtonClasses}
+          className={`${repostButtonClasses} text-xs sm:text-sm md:text-base`}
           aria-label={isReposted ? "Undo repost" : "Repost"}
           title={isReposted ? "Undo repost" : "Repost"}
         >
           <Repeat 
-            size={20}
-            className={`transition-transform duration-300 ${isReposted ? 'scale-110' : 'scale-100'}`}
+            size={16}
+            className={`transition-transform duration-300 sm:w-5 sm:h-5 md:w-6 md:h-6 ${isReposted ? 'scale-110' : 'scale-100'}`}
             fill={isReposted ? "currentColor" : "none"}
             stroke={isReposted ? "currentColor" : "currentColor"}
           />
-          <span className={isReposted ? 'text-[#00C853]' : ''}>{localRepostCount}</span>
+          <span className={`${isReposted ? 'text-[#00C853]' : ''} ml-1`}>{localRepostCount}</span>
         </button>
         
         {/* Save Button */}
         <button
           onClick={handleSaveToggle}
           disabled={isSaving || !currentUser}
-          className={saveButtonClasses}
+          className={`${saveButtonClasses} text-xs sm:text-sm md:text-base`}
           aria-label={isSaved ? "Unsave post" : "Save post"}
           title={isSaved ? "Unsave post" : "Save post"}
         >
           <Bookmark 
-            size={20}
-            className={`transition-transform duration-300 ${isSaved ? 'scale-110' : 'scale-100'}`}
+            size={16}
+            className={`transition-transform duration-300 sm:w-5 sm:h-5 md:w-6 md:h-6 ${isSaved ? 'scale-110' : 'scale-100'}`}
             fill={isSaved ? "currentColor" : "none"}
             stroke={isSaved ? "currentColor" : "currentColor"}
           />

@@ -31,11 +31,11 @@ const SearchHeader: React.FC<SearchHeaderProps> = ({
   }, []);
 
   return (
-    <div className="sticky top-0 bg-white shadow-sm z-10 px-4 py-3">
-      <div className="max-w-lg mx-auto">
+    <div className="sticky top-0 z-10 px-3 py-4 ">
+      <div className="mx-auto">
         <div 
-          className={`flex items-center bg-gray-100 rounded-full px-4 py-2 
-            ${isFocused ? 'ring-2 ring-blue-300' : ''}`}
+          className={`flex items-center bg-white rounded-2xl border px-4 py-2 
+            ${isFocused ? 'ring-2 ring-blue-300 border-0' : ''}`}
         >
           <Search 
             size={20} 

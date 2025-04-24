@@ -31,15 +31,18 @@ class ErrorBoundary extends React.Component<{ children: ReactNode }, { hasError:
   }
 }
 
-// Gradient icon component with type safety
-const GradientIcon = ({ icon, active }: { icon: React.ReactElement; active: boolean }) => {
-  const iconWithProps = React.cloneElement(icon, {
-    size: 24,
-    className: active ? '' : 'text-gray-400',
-    ...(active ? { stroke: "url(#nav-gradient)" } : {})
-  });
+interface IconProps {
+  size?: number;
+  className?: string;
+  [key: string]: any;
+}
 
-  return iconWithProps;
+// Gradient icon component with type safety
+const GradientIcon = ({ icon, active }: { icon: React.ReactElement<IconProps>; active: boolean }) => {
+  return React.cloneElement(icon, {
+    className: `w-5 h-5 ${active ? '' : 'text-gray-400'} sm:w-6 sm:h-6 ${icon.props?.className || ''}`,
+    style: active ? { stroke: "url(#nav-gradient)" } : undefined
+  } as IconProps);
 };
 
 export default function BottomNavigation() {
@@ -60,7 +63,7 @@ export default function BottomNavigation() {
 
   return (
     <ErrorBoundary>
-      <div className="flex items-center bg-gray-100 justify-around py-3 border-t border-gray-200 fixed bottom-0 w-full">
+      <div className="flex items-center bg-gray-100 justify-around py-2 sm:py-3 border-t border-gray-200 fixed bottom-0 w-full px-6 sm:px-8 lg:px-40">
         {/* SVG Gradient Definition - only rendered once */}
         <svg width="0" height="0" className="absolute">
           <defs>
@@ -77,7 +80,7 @@ export default function BottomNavigation() {
           return (
             <motion.button
               key={item.route}
-              className="p-2 flex flex-col items-center focus:outline-none"
+              className="p-1.5 sm:p-2 flex flex-col items-center focus:outline-none"
               onClick={() => handleNavigation(item.route)}
               whileTap={{ scale: 0.9 }}
               whileHover={{ scale: 1.05 }}
@@ -86,17 +89,16 @@ export default function BottomNavigation() {
               <motion.div
                 animate={{
                   scale: isActive ? 1.1 : 1,
-                  y: isActive ? -2 : 0
+                  y: isActive ? -1 : 0
                 }}
                 transition={{ type: 'spring', stiffness: 500 }}
               >
                 <GradientIcon icon={item.icon} active={isActive} />
               </motion.div>
 
-
               {isActive && (
                 <motion.div
-                  className="h-1 w-6 bg-gradient-to-r from-purple-400 to-blue-400 rounded-full"
+                  className="h-0.5 sm:h-1 w-4 sm:w-6 bg-gradient-to-r from-purple-400 to-blue-400 rounded-full"
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ type: 'spring', stiffness: 500 }}

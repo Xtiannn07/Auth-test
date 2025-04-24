@@ -111,14 +111,14 @@ const SearchPage = () => {
                   (searchTerm.length === 0 && suggestedError);
 
   return (
-    <div className="max-w-2xl mx-auto pb-6">
+    <div className="max-w-6xl mx-auto pb-6 ">
       <SearchHeader 
         searchTerm={searchTerm} 
         setSearchTerm={setSearchTerm}
         isLoading={isLoading}
       />
       
-      <div className="px-4 mt-4">
+      <div className="px-4 mt-4 ">
         {/* Title section */}
         <h2 className="text-xl font-medium mb-4">
           {searchTerm ? 'Search Results' : 'Suggested Users'}

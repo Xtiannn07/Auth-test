@@ -1,9 +1,8 @@
-import { ArrowLeft, MoreHorizontal, LogOut } from 'lucide-react';
+import { LogOut, MoreVertical } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { signOutUser } from '../../store/authSlice';
-import { RootState } from '../../store/store';
 
 interface TopNavigationProps {
   username: string;
@@ -30,9 +29,7 @@ export default function TopNavigation({ username, onLogout }: TopNavigationProps
 
   const handleLogout = async () => {
     try {
-      // Dispatch the signOutUser action from authSlice
-      await dispatch(signOutUser());
-      // Use the parent component's onLogout if provided
+      dispatch(signOutUser() as any);
       if (onLogout) {
         onLogout();
       }
@@ -42,24 +39,43 @@ export default function TopNavigation({ username, onLogout }: TopNavigationProps
     }
   };
 
+  const handleMenuClick = () => {
+    setShowMenu(!showMenu);
+  };
+
   return (
-    <div className="flex items-center justify-between p-4 border-b border-gray-200">
-      <div className="flex items-center">
-        <ArrowLeft className="h-5 w-5 mr-6 text-gray-600" />
-        <h2 className="text-xl font-semibold text-gray-800">{"@" + username}</h2>
+    <nav className="bg-white border-b border-gray-200">
+      <div className="max-w-6xl mx-auto px-3 sm:px-4">
+        <div className="flex justify-between items-center">
+          {/* Logo/Brand - using Bookmark logo */}
+          <Link to="/home" className="flex items-center space-x-2">
+            <img 
+              src="/Bookmark.png" 
+              alt="Marked" 
+              className="w-10 lg:w-14 p-1"
+            />
+            {/* <span className="text-lg sm:text-xl font-semibold bg-gradient-to-r from-purple-500 to-blue-500 text-transparent bg-clip-text">
+              Marked
+            </span> */}
+          </Link>
+
+          {/* Vertical Menu Button */}
+          <button 
+            onClick={handleMenuClick}
+            className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            aria-label="Open menu"
+            aria-expanded={showMenu ? "true" : "false"}
+            aria-haspopup="true"
+          >
+            <MoreVertical className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
+          </button>
+        </div>
       </div>
-      
+
+      {/* Menu Dropdown */}
       <div className="relative" ref={menuRef}>
-        <button 
-          onClick={() => setShowMenu(!showMenu)}
-          className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-          aria-label="User menu"
-        >
-          <MoreHorizontal className="h-5 w-5 text-gray-600" />
-        </button>
-        
         {showMenu && (
-          <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-100">
+          <div className="absolute right-2 sm:right-4 mt-1 w-48 sm:w-56 bg-white rounded-lg shadow-lg py-1 z-50 border border-gray-100">
             <div className="px-4 py-2 text-sm text-gray-500 border-b border-gray-100">
               {username}@gmail.com
             </div>
@@ -73,6 +89,6 @@ export default function TopNavigation({ username, onLogout }: TopNavigationProps
           </div>
         )}
       </div>
-    </div>
+    </nav>
   );
 }

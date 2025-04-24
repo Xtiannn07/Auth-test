@@ -55,11 +55,11 @@ const HomePage = () => {
   return (
     <div className="max-w-6xl mx-auto p-4">
       {/* Filter buttons */}
-      <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <div className="flex space-x-4">
+      <div className="bg-white rounded-lg shadow p-3 mb-2">
+        <div className=" flex space-x-4 ">
           <button
             onClick={() => handleFilterChange('latest')}
-            className={`px-4 py-2 rounded-full ${
+            className={`px-4 py-2 rounded-xl ${
               activeFilter === 'latest' 
                 ? 'bg-blue-500 text-white' 
                 : 'bg-gray-100 hover:bg-gray-200'
@@ -69,7 +69,7 @@ const HomePage = () => {
           </button>
           <button
             onClick={() => handleFilterChange('popular')}
-            className={`px-4 py-2 rounded-full ${
+            className={`px-4 py-2 rounded-xl ${
               activeFilter === 'popular' 
                 ? 'bg-blue-500 text-white' 
                 : 'bg-gray-100 hover:bg-gray-200'
@@ -79,7 +79,7 @@ const HomePage = () => {
           </button>
           <button
             onClick={() => handleFilterChange('following')}
-            className={`px-4 py-2 rounded-full ${
+            className={`px-4 py-2 rounded-xl ${
               activeFilter === 'following' 
                 ? 'bg-blue-500 text-white' 
                 : 'bg-gray-100 hover:bg-gray-200'
