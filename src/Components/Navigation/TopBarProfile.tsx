@@ -4,12 +4,12 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { signOutUser } from '../../store/authSlice';
 
-interface TopNavigationProps {
+interface TopBarProfileProps {
   username: string;
   onLogout?: () => void;
 }
 
-export default function TopNavigation({ username, onLogout }: TopNavigationProps) {
+export default function TopBarProfile({ username, onLogout }: TopBarProfileProps) {
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
