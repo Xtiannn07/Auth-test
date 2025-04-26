@@ -56,7 +56,7 @@ export default function FollowersList({ userId, type, isOpen, onClose }: Followe
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 backdrop-blur-xs backdrop-saturate-150 z-50 flex items-center justify-center">
       <div className="bg-white rounded-lg w-full max-w-md max-h-[80vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between border-b p-4">

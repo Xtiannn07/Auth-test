@@ -7,6 +7,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
 import { useProfile } from '../../Contexts/ProfileContext';
 import { PostFormSkeleton } from '../../Components/UI/Skeleton';
+import { motion } from 'framer-motion';
 
 interface PostPageProps {
   maxContentLength?: number;
@@ -113,30 +114,112 @@ export default function PostPage({
     contentLength > maxContentLength * 0.8 ? 'text-yellow-500' :
     'text-gray-500';
 
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.15
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: { 
+      y: 0, 
+      opacity: 1,
+      transition: {
+        type: "spring",
+        stiffness: 300,
+        damping: 24
+      }
+    }
+  };
+
+  const buttonVariants = {
+    hover: { 
+      scale: 1.03,
+      transition: { 
+        type: "spring", 
+        stiffness: 400, 
+        damping: 10 
+      }
+    },
+    tap: { scale: 0.97 }
+  };
+
+  const skeletonVariants = {
+    initial: { opacity: 0.6 },
+    animate: { 
+      opacity: 1,
+      transition: {
+        repeat: Infinity,
+        repeatType: "reverse",
+        duration: 0.8
+      }
+    }
+  };
+
   if (!currentUser) {
     return null; // Don't render anything if not authenticated
   }
 
   return (
     <div className="max-w-2xl mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-6">Create a New Post</h1>
+      <motion.div 
+        className="fixed top-4 right-4 mb-2"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.2 }}
+          >
+        Sup! {userProfile?.displayName || currentUser.email?.split('@')[0] || 'Anonymous'}
+      </motion.div>
+
+      <motion.h1 
+        className="text-2xl font-bold mb-2"
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        Create a New Post
+      </motion.h1>
 
       {isLoading ? (
-        <PostFormSkeleton />
+        <motion.div
+          initial="initial"
+          animate="animate"
+          variants={skeletonVariants}
+        >
+          <PostFormSkeleton />
+        </motion.div>
       ) : (
         <>
-          <div className="mb-4">Welcome, {userProfile?.displayName || currentUser.email?.split('@')[0] || 'Anonymous'}</div>
 
           {notification && (
-            <Notification
-              type={notification.type}
-              message={notification.message}
-              onClose={() => setNotification(null)}
-            />
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Notification
+                type={notification.type}
+                message={notification.message}
+                onClose={() => setNotification(null)}
+              />
+            </motion.div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
+          <motion.form 
+            onSubmit={handleSubmit} 
+            className="space-y-4"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+          >
+            <motion.div variants={itemVariants}>
               <label htmlFor="title" className="block text-gray-700 font-medium mb-2">
                 Title
               </label>
@@ -149,9 +232,9 @@ export default function PostPage({
                 className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                 maxLength={100}
               />
-            </div>
+            </motion.div>
 
-            <div>
+            <motion.div variants={itemVariants}>
               <label htmlFor="content" className="block text-gray-700 font-medium mb-2">
                 Content
               </label>
@@ -165,25 +248,41 @@ export default function PostPage({
               <div className={`text-right text-sm mt-1 ${contentLengthColor}`}>
                 {contentLength}/{maxContentLength} characters
               </div>
-            </div>
+            </motion.div>
 
-            <div className="flex justify-end space-x-4">
-              <button
+            <motion.div 
+              className="flex justify-end space-x-4"
+              variants={itemVariants}
+            >
+              <motion.button
                 type="button"
                 onClick={() => navigate('/')}
                 className="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-100 transition-colors"
+                variants={buttonVariants}
+                whileHover="hover"
+                whileTap="tap"
               >
                 Cancel
-              </button>
-              <button
+              </motion.button>
+              <motion.button
                 type="submit"
                 className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors disabled:bg-blue-300"
                 disabled={!title.trim() || !content.trim() || content.length > maxContentLength || isSubmitting}
+                variants={buttonVariants}
+                whileHover={!isSubmitting && title.trim() && content.trim() && content.length <= maxContentLength ? "hover" : undefined}
+                whileTap={!isSubmitting && title.trim() && content.trim() && content.length <= maxContentLength ? "tap" : undefined}
               >
-                {isSubmitting ? 'Posting...' : submitButtonText}
-              </button>
-            </div>
-          </form>
+                {isSubmitting ? (
+                  <motion.span
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    Posting...
+                  </motion.span>
+                ) : submitButtonText}
+              </motion.button>
+            </motion.div>
+          </motion.form>
         </>
       )}
     </div>

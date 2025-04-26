@@ -6,6 +6,7 @@ import { RootState } from '../../store/store';
 import { Activity as ActivityType, ActivityService } from '../../Services/ActivityService';
 import { formatDistanceToNow } from 'date-fns';
 import { ActivitySkeleton } from '../../Components/UI/Skeleton';
+import { motion } from 'framer-motion';
 
 // Helper type for Firestore Timestamp
 interface FirestoreTimestamp {
@@ -150,11 +151,60 @@ export default function Activity() {
     }
   };
 
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    show: { 
+      y: 0, 
+      opacity: 1,
+      transition: {
+        type: "spring",
+        stiffness: 300,
+        damping: 24
+      }
+    }
+  };
+
+  const skeletonVariants = {
+    initial: { opacity: 0.6 },
+    animate: { 
+      opacity: 1,
+      transition: {
+        repeat: Infinity,
+        repeatType: "reverse",
+        duration: 0.8
+      }
+    }
+  };
+
   if (loading) {
     return (
       <div className="max-w-2xl mx-auto p-4">
-        <h1 className="text-2xl font-bold mb-6">Activity</h1>
-        <ActivitySkeleton />
+        <motion.h1 
+          className="text-2xl font-bold mb-6"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          Activity
+        </motion.h1>
+        <motion.div
+          initial="initial"
+          animate="animate"
+          variants={skeletonVariants}
+        >
+          <ActivitySkeleton />
+        </motion.div>
       </div>
     );
   }
@@ -162,7 +212,12 @@ export default function Activity() {
   if (error) {
     return (
       <div className="max-w-2xl mx-auto p-4">
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+        <motion.div 
+          className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3 }}
+        >
           <p>{error}</p>
           <button 
             onClick={() => window.location.reload()}
@@ -170,20 +225,34 @@ export default function Activity() {
           >
             Refresh page
           </button>
-        </div>
+        </motion.div>
       </div>
     );
   }
 
   return (
     <div className="max-w-2xl mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-6">Activity</h1>
+      <motion.h1 
+        className="text-2xl font-bold mb-6"
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        Activity
+      </motion.h1>
       {activities.length > 0 ? (
-        <div className="space-y-4">
+        <motion.div 
+          className="space-y-4"
+          variants={containerVariants}
+          initial="hidden"
+          animate="show"
+        >
           {activities.map((activity) => (
-            <div 
+            <motion.div 
               key={activity.id} 
               className="bg-white rounded-lg shadow p-4 flex items-start space-x-3"
+              variants={itemVariants}
+              whileHover={{ scale: 1.01, boxShadow: "0 4px 6px rgba(0,0,0,0.1)" }}
             >
               {/* User Avatar */}
               <div className="flex-shrink-0">
@@ -211,13 +280,18 @@ export default function Activity() {
                   {formatActivityDate(activity.createdAt)}
                 </p>
               </div>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       ) : (
-        <div className="text-center text-gray-500 mt-8">
+        <motion.div 
+          className="text-center text-gray-500 mt-8"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+        >
           <p>No activity to show yet</p>
-        </div>
+        </motion.div>
       )}
     </div>
   );
