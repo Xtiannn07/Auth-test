@@ -1,12 +1,50 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
+import { motion } from 'framer-motion';
 import { signInUser, clearAuthError } from '../store/authSlice';
 import { RootState, AppDispatch } from '../store/store';
 import Input from '../Components/UI/Input';
 import Button from '../Components/UI/Button';
 import SignInFooter from './Footer';
 
+// Animation variants
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      duration: 0.3,
+      staggerChildren: 0.05,
+      delayChildren: 0.05
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: { 
+      type: "spring", 
+      stiffness: 100 
+    }
+  }
+};
+
+const logoVariants = {
+  hidden: { scale: 0.8, opacity: 0 },
+  visible: {
+    scale: 1,
+    opacity: 1,
+    transition: {
+      type: "spring",
+      stiffness: 100,
+      delay: 0.05
+    }
+  }
+};
 
 export default function SignIn() {
   const [email, setEmail] = useState<string>('');
@@ -54,34 +92,50 @@ export default function SignIn() {
   }, []);
 
   return (
-    <div className="flex flex-col items-center min-h-screen py-2 px-4 ">
+    <motion.div 
+      className="flex flex-col items-center min-h-screen py-2 px-4"
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+    >
       {/* Main content wrapper that fills the available space */}
       <div className="w-full max-w-md flex flex-col items-center flex-1">
         {/* Language selector at top */}
-        <div className="mb-22 text-gray-600 text-[12px]">
+        <motion.div 
+          className="mb-22 text-gray-600 text-[12px]"
+          variants={itemVariants}
+        >
           English (US)
-        </div>
+        </motion.div>
         
-        {/* Bookmark logo */}
-        <div className="mb-22">
+        {/* Logo with animation */}
+        <motion.div 
+          className="mb-22"
+          variants={logoVariants}
+        >
           <img 
-            src="./Bookmark.png" 
-            alt="Bookmark" 
+            src="./mark.png" 
+            alt="Marked Logo" 
             className="h-14 w-14"
           />
-        </div>
+        </motion.div>
 
-        
         {/* Form container */}
         <div className="w-full">
           {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4" role="alert">
+            <motion.div 
+              className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4" 
+              role="alert"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ type: "spring", stiffness: 100 }}
+            >
               <span className="block sm:inline">{error}</span>
-            </div>
+            </motion.div>
           )}
           
           <form className="space-y-4" onSubmit={handleSubmit}>
-            <div>
+            <motion.div variants={itemVariants}>
               <Input
                 id="email-address"
                 name="email"
@@ -92,9 +146,9 @@ export default function SignIn() {
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
                 className="w-full px-3 py-3 border bg-[#f2f3f5] border-gray-400 rounded-xl"
               />
-            </div>
+            </motion.div>
             
-            <div>
+            <motion.div variants={itemVariants}>
               <Input
                 id="password"
                 name="password"
@@ -105,9 +159,14 @@ export default function SignIn() {
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
                 className="w-full px-3 py-3 border bg-[#f2f3f5] border-gray-400 rounded-xl"
               />
-            </div>
+            </motion.div>
             
-            <div className='w-full max-w-md flex p-[1px] rounded-3xl bg-white'>
+            <motion.div 
+              className='w-full max-w-md flex p-[1px] rounded-3xl bg-white'
+              variants={itemVariants}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
               <Button
                 type="submit"
                 onClick={() => {}} // Satisfy the onClick requirement for TypeScript
@@ -116,19 +175,28 @@ export default function SignIn() {
               >
                 {loading ? 'Logging in...' : 'Log in'}
               </Button>
-            </div>
+            </motion.div>
             
-            <div className="text-center">
-              <Link to="/forgot" className="text-gray-600 text-sm font-medium ">
+            <motion.div 
+              className="text-center"
+              variants={itemVariants}
+            >
+              <Link to="/forgot" className="text-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-sm font-medium">
                 Forgot password?
               </Link>
-            </div>
+            </motion.div>
           </form>
         </div>
       </div>
 
-      {/* Footer is now placed outside the main content wrapper */}
-      <SignInFooter />
-    </div>
+      {/* Footer with animation */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5 }}
+      >
+        <SignInFooter />
+      </motion.div>
+    </motion.div>
   );
 }

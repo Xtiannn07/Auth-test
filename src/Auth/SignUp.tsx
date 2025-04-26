@@ -1,6 +1,7 @@
 import { useState, FormEvent, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
+import { motion } from 'framer-motion';
 import { signUpUser, clearAuthError, signOutUser } from '../store/authSlice';
 import { RootState, AppDispatch } from '../store/store';
 import UserService from '../Services/UserService';
@@ -8,6 +9,43 @@ import { useProfile } from '../Contexts/ProfileContext';
 import Input from '../Components/UI/Input';
 import Button from '../Components/UI/Button';
 import SignInFooter from './Footer';
+
+// Animation variants
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.05,
+      delayChildren: 0.05
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: { 
+      type: "spring", 
+      stiffness: 100 
+    }
+  }
+};
+
+const logoVariants = {
+  hidden: { scale: 0.8, opacity: 0 },
+  visible: {
+    scale: 1,
+    opacity: 1,
+    transition: {
+      type: "spring",
+      stiffness: 100,
+      delay: 0.05
+    }
+  }
+};
 
 export default function SignUp() {
   const [email, setEmail] = useState('');
@@ -225,35 +263,58 @@ export default function SignUp() {
   const isLoading = loading || profileLoading || isSubmitting;
 
   return (
-    <div className="flex flex-col items-center min-h-screen py-2 px-4">
+    <motion.div 
+      className="flex flex-col items-center min-h-screen py-2 px-4"
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+    >
       <div className="w-full max-w-md flex flex-col items-center flex-1">
-        <div className="mb-6 text-gray-600 text-[12px]">
+        <motion.div 
+          className="mb-12 md:mb-22 text-gray-600 text-[12px]"
+          variants={itemVariants}
+        >
           English (US)
-        </div>
+        </motion.div>
         
-        <div className="mb-6">
+        <motion.div 
+          className="mb-6"
+          variants={logoVariants}
+        >
           <img 
-            src="./Bookmark.png" 
-            alt="Bookmark" 
+            src="./mark.png" 
+            alt="marked logo" 
             className="h-14 w-14"
           />
-        </div>
+        </motion.div>
         
         <div className="w-full">
           {combinedError && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4" role="alert">
+            <motion.div 
+              className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4" 
+              role="alert"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ type: "spring", stiffness: 100 }}
+            >
               <span className="block sm:inline">{combinedError}</span>
-            </div>
+            </motion.div>
           )}
           
           {statusMessage && !combinedError && (
-            <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-4" role="alert">
+            <motion.div 
+              className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-4" 
+              role="alert"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ type: "spring", stiffness: 100 }}
+            >
               <span className="block sm:inline">{statusMessage}</span>
-            </div>
+            </motion.div>
           )}
           
           <form className="space-y-4" onSubmit={handleSubmit}>
-            <div>
+            <motion.div variants={itemVariants}>
               <Input
                 id="display-name"
                 name="displayName"
@@ -264,9 +325,9 @@ export default function SignUp() {
                 className="w-full px-3 py-3 border bg-gray-100 border-gray-300 rounded-xl"
                 disabled={isLoading}
               />
-            </div>
+            </motion.div>
             
-            <div>
+            <motion.div variants={itemVariants}>
               <Input
                 id="username"
                 name="username"
@@ -279,13 +340,24 @@ export default function SignUp() {
                 className="w-full px-3 py-3 border bg-gray-100 border-gray-300 rounded-xl"
                 disabled={isLoading}
               />
-              {usernameError && <p className="text-red-500 text-xs mt-1">{usernameError}</p>}
-              <p className="text-gray-500 text-xs mt-1">
+              {usernameError && (
+                <motion.p 
+                  className="text-red-500 text-xs mt-1"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
+                  {usernameError}
+                </motion.p>
+              )}
+              <motion.p 
+                className="text-gray-500 text-xs mt-1"
+                variants={itemVariants}
+              >
                 Only letters, numbers, and underscores are allowed
-              </p>
-            </div>
+              </motion.p>
+            </motion.div>
             
-            <div>
+            <motion.div variants={itemVariants}>
               <Input
                 id="email-address"
                 name="email"
@@ -297,9 +369,9 @@ export default function SignUp() {
                 className="w-full px-3 py-3 border bg-gray-100 border-gray-300 rounded-xl"
                 disabled={isLoading}
               />
-            </div>
+            </motion.div>
             
-            <div>
+            <motion.div variants={itemVariants}>
               <Input
                 id="password"
                 name="password"
@@ -311,9 +383,9 @@ export default function SignUp() {
                 className="w-full px-3 py-3 border bg-gray-100 border-gray-300 rounded-xl"
                 disabled={isLoading}
               />
-            </div>
+            </motion.div>
             
-            <div>
+            <motion.div variants={itemVariants}>
               <Input
                 id="confirm-password"
                 name="confirmPassword"
@@ -325,9 +397,14 @@ export default function SignUp() {
                 className="w-full px-3 py-3 border bg-gray-100 border-gray-300 rounded-xl"
                 disabled={isLoading}
               />
-            </div>
+            </motion.div>
             
-            <div className='w-full max-w-md flex p-[1px] rounded-3xl bg-white'>
+            <motion.div 
+              className='w-full max-w-md flex p-[1px] rounded-3xl bg-white'
+              variants={itemVariants}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
               <Button
                 type="submit"
                 disabled={isLoading}
@@ -335,20 +412,30 @@ export default function SignUp() {
               >
                 {isLoading ? 'Creating account...' : 'Sign up'}
               </Button>
-            </div>
+            </motion.div>
             
-            <div className="text-center">
-              <p className="text-gray-600 text-sm font-medium">
+            <motion.div 
+              className="text-center"
+              variants={itemVariants}
+            >
+              <p className="text-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-sm font-medium">
                 Already have an account?{' '}
-                <Link to="/signin" className="text-blue-500 hover:underline">
+                <Link to="/signin" className="text-gray-600 hover:underline">
                   Sign in
                 </Link>
               </p>
-            </div>
+            </motion.div>
           </form>
         </div>
       </div>
-      <SignInFooter />
-    </div>
+      
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5 }}
+      >
+        <SignInFooter />
+      </motion.div>
+    </motion.div>
   );
 }

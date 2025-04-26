@@ -92,7 +92,7 @@ const UsersCard: React.FC<UsersCardProps> = ({ user, onCardRemove }) => {
         </div>
         
         <div className="min-w-0 flex-1 space-y-0.5">
-          <h3 className="font-semibold text-gray-900 text-sm sm:text-base truncate group-hover:text-blue-600 transition-colors">
+          <h3 className="font-semibold text-gray-900 text-sm sm:text-base truncate group-hover:text-gray-300 transition-colors">
             {user.displayName || displayUsername}
           </h3>
           <p className="text-gray-500 text-xs sm:text-sm truncate">@{displayUsername}</p>

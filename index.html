@@ -2,12 +2,46 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image" href="Bookmark.png"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BookMarked</title>
+    <meta name="description" content="Marked - A community platform for readers to share thoughts, create discussions, and connect through book-related topics" />
+    <meta name="keywords" content="book discussions, reader community, reading threads, trending topics, literary conversations" />
+    <meta name="author" content="Christian Marc Galingan" />
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="mark.png" />
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://yourwebsite.com" />
+    
+    <title>Marked - Open Discussions for community</title>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Structured Data for Rich Results -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "DiscussionForumPosting",
+        "name": "Marked",
+        "description": "A community platform for readers to share thoughts, create discussions, and connect through trending topics",
+        "potentialAction": {
+          "@type": "ReadAction",
+          "target": {
+            "@type": "EntryPoint",
+            "urlTemplate": "https://yourwebsite.com/topics/{topic_id}"
+          }
+        },
+        "publisher": {
+          "@type": "Organization",
+          "name": "Marked - created by; Christian Marc Galingan",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://yourwebsite.com/public/mark.png"
+          }
+        }
+      }
+    </script>
   </body>
 </html>

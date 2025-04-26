@@ -7,10 +7,10 @@ export default function SignInFooter() {
   return (
     <div className="w-full mt-auto flex flex-col items-center">
       {!isSignUpPage && (
-        <div className="w-full max-w-md flex p-[1px] rounded-3xl bg-gradient-to-r from-purple-400 to-blue-300">
+        <div className="w-full max-w-md flex p-[1px] rounded-3xl bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900">
           <Link 
             to="/signup" 
-            className="group w-full text-center bg-white bg-opacity-0 text-blue-600 font-semibold py-2 px-4 rounded-3xl"
+            className="group w-full text-center bg-gray-100 bg-opacity-0 text-gradient-to-r from-gray-900 via-gray-800 to-gray-900 font-semibold py-2 px-4 rounded-3xl"
           >
             <span className="inline-block group-hover:scale-105 transition-transform duration-150">
               Create new account

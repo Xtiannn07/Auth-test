@@ -143,8 +143,8 @@ export default function UserProfilePage() {
               className={`px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-colors ${
                 isFollowing 
                   ? 'bg-white/10 text-white hover:bg-white/20' 
-                  : 'bg-blue-500 text-white hover:bg-blue-600'
-              } backdrop-blur-sm border border-white/10`}
+                  : 'bg-white/10 text-white hover:bg-white/20'
+              } backdrop-blur-sm border border-white/50`}
             >
               {isFollowing ? 'Following' : 'Follow'}
             </button>

@@ -120,7 +120,7 @@ const UsersActionButtons: React.FC<UsersActionButtonsProps> = ({
           className={`px-3 py-1 rounded-full text-sm font-medium flex items-center
             ${currentIsFollowing 
               ? 'border border-gray-300 text-gray-700' 
-              : 'bg-blue-500 text-white hover:bg-blue-600'}
+              : 'bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-white hover:bg-blue-900'}
             ${(isLoading || isCheckingStatus) ? 'opacity-75' : ''}
             transition-all duration-200`}
           aria-label={currentIsFollowing ? "Following" : "Follow"}
@@ -135,7 +135,7 @@ const UsersActionButtons: React.FC<UsersActionButtonsProps> = ({
         
         <button
           onClick={handleRemove}
-          className="p-2 rounded-full hover:bg-gray-100 text-gray-500"
+          className="p-2 rounded-full hover:bg-gray-200 text-gray-500"
           aria-label="Remove from suggestions"
         >
           <X size={18} />

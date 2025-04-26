@@ -61,7 +61,7 @@ const HomePage = () => {
             onClick={() => handleFilterChange('latest')}
             className={`px-4 py-2 rounded-xl ${
               activeFilter === 'latest' 
-                ? 'bg-blue-500 text-white' 
+                ? 'bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-white' 
                 : 'bg-gray-100 hover:bg-gray-200'
             }`}
           >
@@ -71,7 +71,7 @@ const HomePage = () => {
             onClick={() => handleFilterChange('popular')}
             className={`px-4 py-2 rounded-xl ${
               activeFilter === 'popular' 
-                ? 'bg-blue-500 text-white' 
+                ? 'bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-white' 
                 : 'bg-gray-100 hover:bg-gray-200'
             }`}
           >
@@ -81,7 +81,7 @@ const HomePage = () => {
             onClick={() => handleFilterChange('following')}
             className={`px-4 py-2 rounded-xl ${
               activeFilter === 'following' 
-                ? 'bg-blue-500 text-white' 
+                ? 'bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-white' 
                 : 'bg-gray-100 hover:bg-gray-200'
             }`}
           >
@@ -127,7 +127,7 @@ const HomePage = () => {
               {activeFilter === 'following' && (
                 <button 
                   onClick={() => handleFilterChange('latest')}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                  className="px-4 py-2 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-white rounded-lg hover:bg-blue-600"
                 >
                   Discover Posts
                 </button>
@@ -161,7 +161,7 @@ const HomePage = () => {
             
             {suggestions && suggestions.length > 0 && (
               <div className="mt-4 text-center">
-                <button className="text-blue-500 hover:text-blue-700">
+                <button className="text-gradient-to-r from-gray-900 via-gray-800 to-gray-900 hover:text-blue-700">
                   See More
                 </button>
               </div>

@@ -44,13 +44,13 @@ export default function TopBarProfile({ username, onLogout }: TopBarProfileProps
   };
 
   return (
-    <nav className="bg-white border-b border-gray-200">
+    <nav className=" border-b border-gray-200 z-0">
       <div className="max-w-6xl mx-auto px-3 sm:px-4">
         <div className="flex justify-between items-center">
           {/* Logo/Brand - using Bookmark logo */}
           <Link to="/home" className="flex items-center space-x-2">
             <img 
-              src="/Bookmark.png" 
+              src="/mark.png" 
               alt="Marked" 
               className="w-10 lg:w-14 p-1"
             />
@@ -61,6 +61,7 @@ export default function TopBarProfile({ username, onLogout }: TopBarProfileProps
 
           {/* Vertical Menu Button */}
           <button 
+            type="button"
             onClick={handleMenuClick}
             className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors"
             aria-label="Open menu"

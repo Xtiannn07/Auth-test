@@ -146,7 +146,7 @@ export default function ProfilePage() {
     >
       {/* Modern header with subtle gradient background */}
       <motion.div 
-        className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-white p-4 sm:p-6 rounded-b-lg relative"
+        className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-white p-4 sm:p-6 rounded-lg relative"
         variants={itemVariants}
       >
         <div className="flex flex-col space-y-3 sm:space-y-4">
