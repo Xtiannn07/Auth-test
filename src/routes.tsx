@@ -14,6 +14,7 @@ const SearchPage = lazy(() => import('./Pages/Search/Search'));
 const PostPage = lazy(() => import('./Pages/Post/Post'));
 const ProfilePage = lazy(() => import('./Pages/Profile/Profile'));
 const UserProfilePage = lazy(() => import('./Pages/UsersComponents/UserProfile'));
+const ActivityPage = lazy(() => import('./Pages/Activity/Activity'));
 
 const LazyRoute = ({ component: Component }: { component: React.ComponentType }) => (
   <ErrorBoundary>
@@ -85,6 +86,16 @@ const routes = [
       <PrivateRoute>
         <AuthenticatedRouteWrapper>
           <LazyRoute component={PostPage} />
+        </AuthenticatedRouteWrapper>
+      </PrivateRoute>
+    ),
+  },
+  {
+    path: '/activity',
+    element: (
+      <PrivateRoute>
+        <AuthenticatedRouteWrapper>
+          <LazyRoute component={ActivityPage} />
         </AuthenticatedRouteWrapper>
       </PrivateRoute>
     ),

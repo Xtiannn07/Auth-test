@@ -14,10 +14,13 @@ import {
   getDoc,
   setDoc,
   serverTimestamp,
-  onSnapshot
+  onSnapshot,
+  writeBatch,
+  runTransaction
 } from 'firebase/firestore';
 import { db } from './Firebase';
 import UserService from './UserService';
+import { ActivityService } from './ActivityService';
 
 export interface PostLike {
   userId: string;
@@ -48,7 +51,45 @@ export interface Repost {
   };
 }
 
+interface Post {
+  id: string;
+  title: string;
+  content: string;
+  author: {
+    id: string;
+    name: string;
+    photoURL?: string;
+  };
+  createdAt: any;
+  likeCount: number;
+  commentCount: number;
+  repostCount: number;
+  saveCount: number;
+  likes: string[];
+}
+
 export const PostService = {
+  // Helper function to normalize post data
+  normalizePostData(doc: any): Post {
+    const data = doc.data();
+    return {
+      id: doc.id,
+      title: data.title || '',
+      content: data.content || '',
+      author: {
+        id: data.author?.id || '',
+        name: data.author?.name || 'Anonymous',
+        photoURL: data.author?.photoURL || ''
+      },
+      createdAt: data.createdAt || serverTimestamp(),
+      likeCount: data.likeCount || 0,
+      commentCount: data.commentCount || 0,
+      repostCount: data.repostCount || 0,
+      saveCount: data.saveCount || 0,
+      likes: data.likes || []
+    };
+  },
+
   async fetchPosts(filter: string, currentUserId?: string) {
     let postsQuery;
     
@@ -81,14 +122,11 @@ export const PostService = {
       
       // Get the posts and filter them in memory
       const querySnapshot = await getDocs(postsQuery);
-      const allPosts = querySnapshot.docs.map(doc => ({ 
-        id: doc.id, 
-        ...doc.data() 
-      }));
+      const allPosts = querySnapshot.docs.map(doc => this.normalizePostData(doc));
       
       // Filter posts by followed users and return only first 20
       return allPosts
-        .filter((post: any) => followingIds.includes(post.author?.id))
+        .filter(post => followingIds.includes(post.author?.id))
         .slice(0, 20);
     } else {
       postsQuery = query(
@@ -101,7 +139,7 @@ export const PostService = {
     // For non-following queries, return the results directly
     if (filter !== 'following') {
       const querySnapshot = await getDocs(postsQuery);
-      return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      return querySnapshot.docs.map(doc => this.normalizePostData(doc));
     }
   },
 
@@ -118,18 +156,57 @@ export const PostService = {
   
   // Add a like to a post
   async likePost(postId: string, userId: string, displayName: string) {
-    const likeRef = doc(db, `posts/${postId}/likes/${userId}`);
-    await setDoc(likeRef, {
-      userId,
-      displayName,
-      timestamp: serverTimestamp()
-    });
-    
-    // Also update the count in the main post document for efficiency
-    const postRef = doc(db, 'posts', postId);
-    await updateDoc(postRef, {
-      likeCount: increment(1)
-    });
+    try {
+      const likeRef = doc(db, `posts/${postId}/likes/${userId}`);
+      
+      // Get post data for activity
+      const postRef = doc(db, 'posts', postId);
+      const postDoc = await getDoc(postRef);
+      if (!postDoc.exists()) {
+        throw new Error('Post not found');
+      }
+      const postData = postDoc.data();
+      
+      // Create batch operations to ensure atomicity
+      const batch = writeBatch(db);
+      
+      // Add like
+      batch.set(likeRef, {
+        userId,
+        displayName,
+        timestamp: serverTimestamp()
+      });
+      
+      // Update count in main post
+      batch.update(postRef, {
+        likeCount: increment(1)
+      });
+      
+      // Commit transaction
+      await batch.commit();
+      
+      // Activity creation should not block the main flow or throw errors
+      // that would prevent like from succeeding
+      if (postData?.author?.id !== userId) {
+        try {
+          // Get user profile for photo
+          const userProfile = await UserService.getUserProfile(userId);
+          ActivityService.createLikeActivity(
+            userId,
+            displayName,
+            postData.author.id,
+            postId,
+            userProfile.photoURL
+          ).catch(err => console.error('Failed to create like activity:', err));
+        } catch (activityError) {
+          console.error('Error preparing like activity:', activityError);
+          // Don't throw - the like operation itself succeeded
+        }
+      }
+    } catch (error) {
+      console.error('Error liking post:', error);
+      throw error; // Rethrow to let the UI handle it
+    }
   },
   
   // Remove a like from a post
@@ -187,29 +264,60 @@ export const PostService = {
   
   // Add a comment to a post
   async addComment(postId: string, userId: string, displayName: string, text: string, photoURL?: string) {
-    const comment = {
-      postId,
-      author: {
-        uid: userId,
-        displayName,
-        photoURL
-      },
-      text,
-      createdAt: serverTimestamp()
-    };
-    
-    const commentRef = await addDoc(collection(db, `posts/${postId}/comments`), comment);
-    
-    // Also update the count in the main post document
-    const postRef = doc(db, 'posts', postId);
-    await updateDoc(postRef, {
-      commentCount: increment(1)
-    });
-    
-    return {
-      id: commentRef.id,
-      ...comment
-    };
+    try {
+      const comment = {
+        postId,
+        author: {
+          uid: userId,
+          displayName,
+          photoURL
+        },
+        text,
+        createdAt: serverTimestamp()
+      };
+      
+      // Get post data
+      const postRef = doc(db, 'posts', postId);
+      const postDoc = await getDoc(postRef);
+      if (!postDoc.exists()) {
+        throw new Error('Post not found');
+      }
+      const postData = postDoc.data();
+      
+      // Use transaction to ensure atomicity
+      let commentId = '';
+      await runTransaction(db, async (transaction) => {
+        // Create the comment
+        const commentRef = doc(collection(db, `posts/${postId}/comments`));
+        transaction.set(commentRef, comment);
+        commentId = commentRef.id;
+        
+        // Update comment count
+        transaction.update(postRef, {
+          commentCount: increment(1)
+        });
+      });
+      
+      // Send activity notification separately (don't block main function)
+      if (postData?.author?.id !== userId) {
+        ActivityService.createCommentActivity(
+          userId,
+          displayName,
+          postData.author.id,
+          postId,
+          text,
+          photoURL
+        ).catch(err => console.error('Failed to create comment activity:', err));
+      }
+      
+      return {
+        id: commentId,
+        ...comment
+      };
+    } catch (error) {
+      console.error('Error adding comment:', error);
+      throw error;
+    }
   },
   
   // Delete a comment
@@ -270,38 +378,67 @@ export const PostService = {
   
   // Repost a post
   async repostPost(postId: string, userId: string) {
-    // Get the original post to save metadata
-    const postRef = doc(db, 'posts', postId);
-    const postDoc = await getDoc(postRef);
-    
-    if (!postDoc.exists()) {
-      throw new Error('Post not found');
+    try {
+      // Get the original post
+      const postRef = doc(db, 'posts', postId);
+      const postDoc = await getDoc(postRef);
+      
+      if (!postDoc.exists()) {
+        throw new Error('Post not found');
+      }
+      
+      const postData = postDoc.data();
+      
+      // Get user data for activity
+      const userProfile = await UserService.getUserProfile(userId);
+      
+      // Create repost and update counts in a transaction
+      let repostRef;
+      
+      await runTransaction(db, async (transaction) => {
+        // Create repost
+        const repostData = {
+          originalPostId: postId,
+          repostedBy: userId,
+          repostedAt: serverTimestamp(),
+          originalAuthor: postData.author
+        };
+        
+        // Create in main collection
+        repostRef = doc(collection(db, 'reposts'));
+        transaction.set(repostRef, repostData);
+        
+        // Add to user's reposts subcollection
+        transaction.set(doc(db, `users/${userId}/reposts/${repostRef.id}`), repostData);
+        
+        // Update count on original post
+        transaction.update(postRef, {
+          repostCount: increment(1)
+        });
+      });
+      
+      // Send activity notification (don't block)
+      if (postData?.author?.id !== userId) {
+        ActivityService.createRepostActivity(
+          userId,
+          userProfile.displayName,
+          postData.author.id,
+          postId,
+          userProfile.photoURL
+        ).catch(err => console.error('Failed to create repost activity:', err));
+      }
+      
+      return {
+        id: repostRef.id,
+        originalPostId: postId,
+        repostedBy: userId,
+        repostedAt: new Date(),
+        originalAuthor: postData.author
+      };
+    } catch (error) {
+      console.error('Error reposting:', error);
+      throw error;
     }
-    
-    const postData = postDoc.data();
-    
-    // Create repost in reposts collection
-    const repost = {
-      originalPostId: postId,
-      repostedBy: userId,
-      repostedAt: serverTimestamp(),
-      originalAuthor: postData.author
-    };
-    
-    const repostRef = await addDoc(collection(db, 'reposts'), repost);
-    
-    // Also add to user's reposts subcollection
-    await setDoc(doc(db, `users/${userId}/reposts/${repostRef.id}`), repost);
-    
-    // Update repost count on original post
-    await updateDoc(postRef, {
-      repostCount: increment(1)
-    });
-    
-    return {
-      id: repostRef.id,
-      ...repost
-    };
   },
   
   // Remove a repost

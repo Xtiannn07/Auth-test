@@ -40,6 +40,22 @@ service cloud.firestore {
       }
     }
 
+    // ==================== ACTIVITIES COLLECTION ====================
+    match /activities/{activityId} {
+      // Anyone can read activities where they are the recipient
+      allow read: if request.auth != null && 
+                  resource.data.recipientId == request.auth.uid;
+      
+      // Only authenticated users can create activities
+      allow create: if request.auth != null && 
+                   request.resource.data.senderId == request.auth.uid &&
+                   validActivityDocument(request.resource.data);
+                   
+      // Users can only delete activities they created
+      allow delete: if request.auth != null && 
+                    resource.data.senderId == request.auth.uid;
+    }
+
     // ==================== FOLLOWING COLLECTION ====================
     match /following/{userId} {
       allow read: if true;
@@ -155,6 +171,19 @@ service cloud.firestore {
            data.author.id is string &&
            data.author.name is string &&
            data.createdAt is timestamp;
+    }
+
+    function validActivityDocument(data) {
+      return data.keys().hasAll([
+        "type",
+        "senderId",
+        "senderName",
+        "recipientId"
+      ]) && 
+      data.type is string &&
+      data.senderId is string &&
+      data.senderName is string &&
+      data.recipientId is string;
     }
 
     function onlyUpdatesAllowedPostFields(newData, oldData) {

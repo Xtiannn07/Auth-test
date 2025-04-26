@@ -15,6 +15,7 @@ import {
   writeBatch
 } from 'firebase/firestore';
 import { db } from './Firebase';
+import { ActivityService } from './ActivityService';
 
 export interface UserProfile {
   uid: string;
@@ -236,48 +237,54 @@ class UserService {
     }
   }
 
-  // Follow a user - updated to use following and followers collections with username maps
+  // Follow a user - updated to use following and followers collections with better error handling
   static async followUser(currentUserUid: string, targetUserUid: string): Promise<boolean> {
     try {
       if (!currentUserUid || !targetUserUid) {
         console.error('Invalid user IDs for following');
         return false;
       }
-
       // Get both users' profiles to access their usernames
       const [currentUser, targetUser] = await Promise.all([
         this.getUserProfile(currentUserUid),
         this.getUserProfile(targetUserUid)
       ]);
-
-      const followingRef = doc(db, 'following', currentUserUid);
-      const followersRef = doc(db, 'followers', targetUserUid);
-
-      // Add target user to current user's following subcollection
-      const followingUsersRef = collection(followingRef, 'users');
-      // Add current user to target user's followers subcollection
-      const followersUsersRef = collection(followersRef, 'users');
-
-      // Use transaction to ensure atomicity
+      // Use transaction to ensure the follow operation is atomic
       await runTransaction(db, async (transaction) => {
-        const followingDoc = doc(followingUsersRef, targetUserUid);
-        const followersDoc = doc(followersUsersRef, currentUserUid);
-
-        transaction.set(followingDoc, { 
-          username: targetUser.username,
-          displayName: targetUser.displayName,
-          photoURL: targetUser.photoURL || '',
-          timestamp: new Date().toISOString()
-        });
+        // Set up references
+        const followingRef = doc(db, 'following', currentUserUid);
+        const followersRef = doc(db, 'followers', targetUserUid);
+        const followingUserDoc = doc(collection(followingRef, 'users'), targetUserUid);
+        const followersUserDoc = doc(collection(followersRef, 'users'), currentUserUid);
+        // Check if documents already exist
+        const followingUserSnap = await transaction.get(followingUserDoc);
         
-        transaction.set(followersDoc, { 
-          username: currentUser.username,
-          displayName: currentUser.displayName,
-          photoURL: currentUser.photoURL || '',
-          timestamp: new Date().toISOString()
-        });
+        // Only proceed if not already following
+        if (!followingUserSnap.exists()) {
+          // Add target user to current user's following
+          transaction.set(followingUserDoc, { 
+            username: targetUser.username,
+            displayName: targetUser.displayName,
+            photoURL: targetUser.photoURL || '',
+            timestamp: new Date().toISOString()
+          });
+          
+          // Add current user to target user's followers
+          transaction.set(followersUserDoc, { 
+            username: currentUser.username,
+            displayName: currentUser.displayName,
+            photoURL: currentUser.photoURL || '',
+            timestamp: new Date().toISOString()
+          });
+        }
       });
-
+      // Create activity separately to not block the follow operation
+      ActivityService.createFollowActivity(
+        currentUserUid,
+        currentUser.displayName,
+        targetUserUid,
+        currentUser.photoURL
+      ).catch(err => console.error('Failed to create follow activity:', err));
       return true;
     } catch (error) {
       console.error('Error following user:', error);

@@ -1,8 +1,9 @@
 // src/Pages/PostComponents/usePostActions.tsx
 import { useState, useEffect } from 'react';
-import { deleteDoc, doc } from 'firebase/firestore';
+import { deleteDoc, doc, runTransaction } from 'firebase/firestore';
 import { db } from '../../Services/Firebase';
 import { PostService, PostLike, Comment } from '../../Services/PostService';
+import { UserService } from '../../Services/UserService';
 
 interface UsePostActionsProps {
   post: {
@@ -49,106 +50,97 @@ export function usePostActions({ post, currentUser, onLikeUpdate, onDeletePost }
   const [repostCount, setRepostCount] = useState(post.repostCount || 0);
   const commentCount = post.commentCount || 0;
 
-  // Update counts when post changes
   useEffect(() => {
     setLikeCount(post.likeCount || 0);
     setRepostCount(post.repostCount || 0);
   }, [post.likeCount, post.repostCount]);
   
-  // Check initial engagement status
   useEffect(() => {
-    if (!currentUser || !post.id) return;
+    if (!currentUser?.uid || !post.id) return;
     
-    // Check if user has liked this post
-    const checkLikeStatus = async () => {
-      try {
-        const hasLiked = await PostService.hasUserLikedPost(post.id, currentUser.uid);
-        setIsLiked(hasLiked);
-      } catch (err) {
-        console.error('Error checking like status:', err);
-      }
-    };
+    let isMounted = true;
     
-    // Check if user has saved this post
-    const checkSaveStatus = async () => {
+    const checkEngagementStatus = async () => {
       try {
-        const hasSaved = await PostService.hasUserSavedPost(post.id, currentUser.uid);
-        setIsSaved(hasSaved);
-      } catch (err) {
-        console.error('Error checking save status:', err);
-      }
-    };
-    
-    // Check if user has reposted this post
-    const checkRepostStatus = async () => {
-      try {
-        const hasReposted = await PostService.hasUserRepostedPost(post.id, currentUser.uid);
-        setIsReposted(hasReposted);
-        
+        const [hasLiked, hasSaved, hasReposted] = await Promise.all([
+          PostService.hasUserLikedPost(post.id, currentUser.uid),
+          PostService.hasUserSavedPost(post.id, currentUser.uid),
+          PostService.hasUserRepostedPost(post.id, currentUser.uid)
+        ]);
+
+        if (isMounted) {
+          setIsLiked(hasLiked);
+          setIsSaved(hasSaved);
+          setIsReposted(hasReposted);
+        }
+
         if (hasReposted) {
           const repost = await PostService.getUserRepostOfPost(post.id, currentUser.uid);
-          if (repost && repost.id) {
-            setRepostId(repost.id as string);
+          if (repost?.id && isMounted) {
+            setRepostId(repost.id);
           }
         }
       } catch (err) {
-        console.error('Error checking repost status:', err);
+        console.error('Error checking engagement status:', err);
+        if (isMounted) {
+          setError('Error loading post status');
+        }
       }
     };
+
+    checkEngagementStatus();
     
-    checkLikeStatus();
-    checkSaveStatus();
-    checkRepostStatus();
-  }, [currentUser, post.id]);
-  
-  // Set up listeners for real-time updates
+    return () => {
+      isMounted = false;
+    };
+  }, [currentUser?.uid, post.id]);
+
   useEffect(() => {
     if (!post.id) return;
     
-    // Subscribe to likes updates
     const likesUnsubscribe = PostService.subscribeToPostLikes(
       post.id, 
       10,
-      (updatedLikes) => {
-        setLikes(updatedLikes);
-      }
+      (updatedLikes) => setLikes(updatedLikes)
     );
     
-    // Subscribe to comments updates 
     const commentsUnsubscribe = PostService.subscribeToPostComments(
       post.id,
-      (updatedComments) => {
-        setComments(updatedComments);
-      }
+      (updatedComments) => setComments(updatedComments)
     );
     
-    // Cleanup listeners on unmount
     return () => {
       likesUnsubscribe();
       commentsUnsubscribe();
     };
   }, [post.id]);
   
-  // Handle like/unlike action
   const handleLikeToggle = async () => {
-    if (!currentUser || !post.id) return;
+    if (!currentUser?.uid || !post.id) {
+      setError('You must be logged in to like posts');
+      return;
+    }
     
     setIsLiking(true);
     setError('');
     
     try {
-      if (isLiked) {
+      const displayName = currentUser.displayName || currentUser.email?.split('@')[0] || 'Anonymous';
+      
+      // Immediately update UI state for better UX
+      const wasLiked = isLiked;
+      setIsLiked(!wasLiked);
+      setLikeCount(prev => wasLiked ? Math.max(0, prev - 1) : prev + 1);
+      
+      if (wasLiked) {
         await PostService.unlikePost(post.id, currentUser.uid);
-        setIsLiked(false);
+        // Update local likes array after successful Firebase operation
         setLikes(prev => prev.filter(like => like.userId !== currentUser.uid));
-        setLikeCount(prev => Math.max(0, prev - 1));
       } else {
-        const displayName = currentUser.displayName || currentUser.email?.split('@')[0] || 'Anonymous';
         await PostService.likePost(post.id, currentUser.uid, displayName);
-        setIsLiked(true);
-        // Add timestamp to match PostLike type
-        setLikes(prev => [...prev, { userId: currentUser.uid, displayName, timestamp: new Date() }]);
-        setLikeCount(prev => prev + 1);
+        // Update local likes array after successful Firebase operation
+        const newLike = { userId: currentUser.uid, displayName, timestamp: new Date() };
+        setLikes(prev => [newLike, ...prev]);
       }
       
       if (onLikeUpdate) {
@@ -156,68 +148,101 @@ export function usePostActions({ post, currentUser, onLikeUpdate, onDeletePost }
       }
     } catch (err) {
       console.error('Error updating like:', err);
+      // Revert optimistic updates on error
+      setIsLiked(isLiked);
+      setLikeCount(likeCount);
       setError('Failed to update like status');
     } finally {
       setIsLiking(false);
     }
   };
-  
-  // Handle save/unsave action
-  const handleSaveToggle = async () => {
-    if (!currentUser || !post.id) return;
-    
-    setIsSaving(true);
-    setError('');
-    
-    try {
-      if (isSaved) {
-        await PostService.unsavePost(post.id, currentUser.uid);
-        setIsSaved(false);
-      } else {
-        await PostService.savePost(post.id, currentUser.uid);
-        setIsSaved(true);
-      }
-    } catch (err) {
-      console.error('Error updating save status:', err);
-      setError('Failed to save post');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-  
-  // Handle repost action
+
   const handleRepost = async () => {
-    if (!currentUser || !post.id) return;
+    if (!currentUser?.uid || !post.id) {
+      setError('You must be logged in to repost');
+      return;
+    }
     
     setIsReposting(true);
     setError('');
     
+    // Track original state for reverting on error
+    const wasReposted = isReposted;
+    const originalRepostCount = repostCount;
+    const originalRepostId = repostId;
+    
+    // Update optimistically
+    setIsReposted(!wasReposted);
+    setRepostCount(prev => wasReposted ? Math.max(0, prev - 1) : prev + 1);
+    
     try {
-      if (isReposted && repostId) {
+      if (wasReposted && repostId) {
         await PostService.unrepostPost(repostId, currentUser.uid, post.id);
-        setIsReposted(false);
         setRepostId(null);
-        setRepostCount(prev => Math.max(0, prev - 1));
       } else {
         const repost = await PostService.repostPost(post.id, currentUser.uid);
-        setIsReposted(true);
         setRepostId(repost.id);
-        setRepostCount(prev => prev + 1);
       }
     } catch (err) {
       console.error('Error reposting:', err);
+      // Revert on error
+      setIsReposted(wasReposted);
+      setRepostCount(originalRepostCount);
+      setRepostId(originalRepostId);
       setError('Failed to repost');
     } finally {
       setIsReposting(false);
     }
   };
-  
-  // Handle adding a comment
+
+  const handleSaveToggle = async () => {
+    if (!currentUser?.uid || !post.id) {
+      setError('You must be logged in to save posts');
+      return;
+    }
+    
+    setIsSaving(true);
+    setError('');
+    
+    // Track original state
+    const wasSaved = isSaved;
+    
+    // Update optimistically
+    setIsSaved(!wasSaved);
+    
+    try {
+      if (wasSaved) {
+        await PostService.unsavePost(post.id, currentUser.uid);
+      } else {
+        await PostService.savePost(post.id, currentUser.uid);
+      }
+    } catch (err) {
+      console.error('Error updating save status:', err);
+      // Revert on error
+      setIsSaved(wasSaved);
+      setError('Failed to save post');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleAddComment = async () => {
-    if (!currentUser || !post.id || !commentText.trim()) return;
+    if (!currentUser?.uid || !post.id) {
+      setError('You must be logged in to comment');
+      return;
+    }
+    
+    if (!commentText.trim()) {
+      setError('Comment cannot be empty');
+      return;
+    }
     
     setIsAddingComment(true);
     setError('');
+    
+    // Store the comment text to clear input field immediately for better UX
+    const commentToAdd = commentText.trim();
+    setCommentText('');
     
     try {
       const displayName = currentUser.displayName || currentUser.email?.split('@')[0] || 'Anonymous';
@@ -225,34 +250,35 @@ export function usePostActions({ post, currentUser, onLikeUpdate, onDeletePost }
         post.id, 
         currentUser.uid, 
         displayName, 
-        commentText.trim(),
+        commentToAdd,
         currentUser.photoURL
       );
       
-      // Clear comment input after successful post
-      setCommentText('');
+      // We don't need to update comments state manually because the subscription will handle it
     } catch (err) {
       console.error('Error adding comment:', err);
+      // Restore comment text on error
+      setCommentText(commentToAdd);
       setError('Failed to add comment');
     } finally {
       setIsAddingComment(false);
     }
   };
-  
-  // Handle deleting a comment
+
   const handleDeleteComment = async (commentId: string) => {
-    if (!currentUser || !post.id) return;
+    if (!currentUser?.uid || !post.id) return;
     
     try {
       await PostService.deleteComment(post.id, commentId);
+      // We don't need to update comments state manually because the subscription will handle it
     } catch (err) {
       console.error('Error deleting comment:', err);
       setError('Failed to delete comment');
     }
   };
-  
+
   const handleDeletePost = async () => {
-    if (!currentUser || !isOwnPost) return;
+    if (!currentUser?.uid || !isOwnPost) return;
     
     setIsDeleting(true);
     setError('');
@@ -266,10 +292,11 @@ export function usePostActions({ post, currentUser, onLikeUpdate, onDeletePost }
     } catch (err) {
       console.error('Error deleting post:', err);
       setError('Failed to delete post');
+    } finally {
       setIsDeleting(false);
     }
   };
-  
+
   return {
     isLiking,
     isSaving,
