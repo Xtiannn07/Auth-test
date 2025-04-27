@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
 import UserCard from '../UsersComponents/UserCard';
-import { SkeletonUser } from '../../Components/UI/Skeleton';
+import { SkeletonUser, AdvertisementSkeleton, SidebarSuggestionsSkeleton } from '../../Components/UI/Skeleton';
 import { removeUserSuggestion, isUserFollowed } from '../SearchComponents/SearchApi';
 import type { User } from '../SearchComponents/SearchApi';
 
@@ -77,65 +77,68 @@ const SuggestionsSidebar: React.FC<SuggestionsSidebarProps> = ({
   return (
     <div className="w-full md:w-60 lg:w-96">
       {/* Advertisement Card */}
-      <div className="bg-white rounded-lg shadow p-4">
-        <h3 className="font-medium mb-4 text-sm">Advertisements</h3>
-        <div className="flex items-center">
-          <img
-            src="https://placehold.co/100x100"
-            alt="Ads"
-            className="w-full aspect-auto"
-          />
+      {isLoading ? (
+        <AdvertisementSkeleton />
+      ) : (
+        <div className="bg-white rounded-lg shadow p-4">
+          <h3 className="font-medium mb-4 text-sm">Advertisements</h3>
+          <div className="flex items-center">
+            <img
+              src="https://placehold.co/100x100"
+              alt="Ads"
+              className="w-full aspect-auto"
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Suggestions Card */}
-      <div className="bg-white rounded-lg shadow p-4 sticky top-4 mt-4">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="font-medium text-sm">Who to follow</h3>
-          <button 
-            onClick={onRefresh}
-            className="text-xs text-blue-500 hover:text-blue-700"
-          >
-            Refresh
-          </button>
-        </div>
-        
-        {isLoading ? (
-          // Display skeleton loading state for suggestions
-          Array(3).fill(null).map((_, i) => (
-            <SkeletonUser key={`skeleton-user-${i}`} />
-          ))
-        ) : error ? (
-          <div className="text-center py-4">
-            <p className="text-red-500 mb-3">Error loading suggestions.</p>
+      {isLoading ? (
+        <SidebarSuggestionsSkeleton />
+      ) : (
+        <div className="bg-white rounded-lg shadow p-4 sticky top-4 mt-4">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-medium text-sm">Who to follow</h3>
             <button 
-              onClick={onRefresh} 
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm"
+              onClick={onRefresh}
+              className="text-xs text-gray-800 hover:bg-gray-200 rounded-xl p-2"
             >
-              Try Again
+              Refresh
             </button>
           </div>
-        ) : filteredSuggestions && filteredSuggestions.length > 0 ? (
-          filteredSuggestions.slice(0, 5).map((user: User) => (
-            <UserCard
-              key={user.id || `user-${user.username}`}
-              user={user}
-              className="mb-3"
-              onCardRemove={() => {
-                if (user.id) {
-                  handleUserRemove(user.id);
-                }
-              }}
-            />
-          ))
-        ) : (
-          <div className="text-center py-4">
-            <p className="text-gray-500">
-              No suggestions available
-            </p>
-          </div>
-        )}
-      </div>
+          
+          {error ? (
+            <div className="text-center py-4">
+              <p className="text-red-500 mb-3">Error loading suggestions.</p>
+              <button 
+                onClick={onRefresh} 
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm"
+              >
+                Try Again
+              </button>
+            </div>
+          ) : filteredSuggestions && filteredSuggestions.length > 0 ? (
+            filteredSuggestions.slice(0, 5).map((user: User) => (
+              <UserCard
+                key={user.id || `user-${user.username}`}
+                user={user}
+                className="mb-3"
+                onCardRemove={() => {
+                  if (user.id) {
+                    handleUserRemove(user.id);
+                  }
+                }}
+              />
+            ))
+          ) : (
+            <div className="text-center py-4">
+              <p className="text-gray-500">
+                No suggestions available
+              </p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
