@@ -74,7 +74,7 @@ const UserPosts: React.FC<UserPostsProps> = ({ userId, includeFollowing = false 
   if (loading) {
     return (
       <div className="flex justify-center items-center py-8">
-        <Loader className="w-6 h-6 text-blue-500 animate-spin" />
+        <Loader className="w-6 h-6 text-black animate-spin" />
       </div>
     );
   }
@@ -103,7 +103,7 @@ const UserPosts: React.FC<UserPostsProps> = ({ userId, includeFollowing = false 
           post={post}
           currentUser={currentUser}
           showFullContent={false}
-          maxContentLength={200}
+          maxContentLength={500}
           customAnimation={{ delay: index * 0.1 }}
           onDeletePost={() => refetch()}
         />

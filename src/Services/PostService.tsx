@@ -9,7 +9,7 @@ import {
   doc, 
   updateDoc, 
   increment, 
-  addDoc, 
+  // addDoc, 
   deleteDoc, 
   getDoc,
   setDoc,
@@ -392,9 +392,10 @@ export const PostService = {
       // Get user data for activity
       const userProfile = await UserService.getUserProfile(userId);
       
-      // Create repost and update counts in a transaction
-      let repostRef;
+      // Create repost reference before the transaction
+      const repostRef = doc(collection(db, 'reposts'));
       
+      // Create repost and update counts in a transaction
       await runTransaction(db, async (transaction) => {
         // Create repost
         const repostData = {
@@ -405,7 +406,6 @@ export const PostService = {
         };
         
         // Create in main collection
-        repostRef = doc(collection(db, 'reposts'));
         transaction.set(repostRef, repostData);
         
         // Add to user's reposts subcollection

@@ -1,9 +1,8 @@
 // src/Pages/PostComponents/usePostActions.tsx
 import { useState, useEffect } from 'react';
-import { deleteDoc, doc, runTransaction } from 'firebase/firestore';
+import { deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../../Services/Firebase';
 import { PostService, PostLike, Comment } from '../../Services/PostService';
-import { UserService } from '../../Services/UserService';
 
 interface UsePostActionsProps {
   post: {

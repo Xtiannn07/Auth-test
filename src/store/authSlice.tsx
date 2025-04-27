@@ -5,8 +5,8 @@ import {
   signOut,
   updateProfile,
   sendPasswordResetEmail,
-  User,
-  UserCredential
+  User
+  // UserCredential
 } from 'firebase/auth';
 import { auth } from '../Services/Firebase';
 

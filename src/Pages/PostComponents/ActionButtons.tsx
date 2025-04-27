@@ -46,7 +46,7 @@ export function ActionButtons({
         aria-label={isLiked ? "Unlike post" : "Like post"}
       >
         <Heart 
-          className={` transition-transform group-hover:scale-110 ${isLiked ? 'scale-110' : ''}`}
+          className={` transition-transform group-hover:scale-110 ${isLiked ? 'scale-105' : ''}`}
           fill={isLiked ? "currentColor" : "none"} 
         />
         <span className="text-sm sm:text-base">{post.likes.length}</span>

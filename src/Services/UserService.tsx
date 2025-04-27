@@ -7,11 +7,11 @@ import {
   query, 
   where, 
   getDocs,
-  increment,
+  // increment,
   orderBy,
   limit,
   runTransaction,
-  deleteDoc,
+  // deleteDoc,
   writeBatch
 } from 'firebase/firestore';
 import { db } from './Firebase';

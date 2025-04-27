@@ -62,8 +62,7 @@ export default function PostCard({
     comments,
     commentText,
     setCommentText,
-    commentCount,
-    repostCount
+    commentCount
   } = usePostActions({ 
     post, 
     currentUser, 
@@ -258,7 +257,7 @@ export default function PostCard({
               }
             }}
             onMouseEnter={() => likes.length > 0 && setShowLikes(true)}
-            onMouseLeave={() => !showAllLikes && setShowLikes(false)}
+            onMouseLeave={() => setShowLikes(false)}
             disabled={isLiking || !currentUser}
             className={`${likeButtonClasses} text-xs sm:text-sm md:text-base`}
             aria-label={isLiked ? "Unlike post" : "Like post"}
@@ -272,7 +271,7 @@ export default function PostCard({
             />
             <span className={isLiked ? 'text-[#FF3040] ml-1' : 'ml-1'}>{localLikeCount}</span>
           </button>
-          
+
           <AnimatePresence>
             {showLikes && likes.length > 0 && (
               <motion.div 
@@ -282,6 +281,8 @@ export default function PostCard({
                 exit={{ opacity: 0, y: 10, scale: 0.95 }}
                 transition={{ duration: 0.2 }}
                 className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg z-20 border border-gray-200 p-3"
+                onMouseEnter={() => setShowLikes(true)}
+                onMouseLeave={() => setShowLikes(false)}
               >
                 <div className="flex justify-between items-center mb-2">
                   <h4 className="font-medium">Liked by</h4>
@@ -302,9 +303,9 @@ export default function PostCard({
                   {likes.slice(0, showAllLikes ? likes.length : 5).map((like) => (
                     <div 
                       key={`${like.userId}_${like.timestamp?.toString()}`} 
-                      className="py-2 border-b border-gray-100 last:border-0"
+                      className=""
                     >
-                      <span className="font-medium">{like.displayName}</span>
+                      <span className="font-light text-sm">{like.displayName}</span>
                     </div>
                   ))}
                 </div>
@@ -320,7 +321,7 @@ export default function PostCard({
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
+          </div>
         
         {/* Comment Button */}
         <button
