@@ -8,6 +8,7 @@ import { User, isUserFollowed } from '../SearchComponents/SearchApi';
 interface UsersCardProps {
   user: User;
   onCardRemove?: () => void;
+  className?: string;
 }
 
 const UsersCard: React.FC<UsersCardProps> = ({ user, onCardRemove }) => {

@@ -5,6 +5,7 @@ import { RootState } from './store/store';
 import AuthenticatedLayout from './Pages/Layout';
 import PrivateRoute from './Auth/PrivateRoute';
 import ErrorBoundary from './Components/UI/ErrorBoundary';
+import LoaderSpinner from './Components/UI/Loader';
 
 const SignIn = lazy(() => import('./Auth/SignIn'));
 const SignUp = lazy(() => import('./Auth/SignUp'));
@@ -16,9 +17,10 @@ const ProfilePage = lazy(() => import('./Pages/Profile/Profile'));
 const UserProfilePage = lazy(() => import('./Pages/UsersComponents/UserProfile'));
 const ActivityPage = lazy(() => import('./Pages/Activity/Activity'));
 
+
 const LazyRoute = ({ component: Component }: { component: React.ComponentType }) => (
   <ErrorBoundary>
-    <Suspense fallback={<div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>}>
+    <Suspense fallback={<LoaderSpinner/>}>
       <Component />
     </Suspense>
   </ErrorBoundary>

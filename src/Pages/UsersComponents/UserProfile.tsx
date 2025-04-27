@@ -6,8 +6,9 @@ import { type UserProfile } from '../../Services/UserService';
 import UserService from '../../Services/UserService';
 import UserPosts from '../ProfileComponents/UserPosts';
 import UserReposts from '../ProfileComponents/UserReposts';
-import { Loader, MessageSquare, RefreshCw } from 'lucide-react';
+import { MessageSquare, RefreshCw } from 'lucide-react';
 import FollowersList from '../ProfileComponents/FollowersList';
+import LoaderSpinner from '../../Components/UI/Loader';
 
 export default function UserProfilePage() {
   const { userId } = useParams<{ userId: string }>();
@@ -99,7 +100,7 @@ export default function UserProfilePage() {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <Loader className="w-8 h-8 text-blue-500 animate-spin" />
+        <LoaderSpinner />
       </div>
     );
   }
@@ -119,7 +120,7 @@ export default function UserProfilePage() {
   const displayUsername = profile.username || (profile.email ? profile.email.split('@')[0] : 'User');
 
   return (
-    <div className="max-w-7xl mx-auto pb-4 sm:pb-8">
+    <div className="max-w-4xl mx-auto pb-4 sm:pb-8">
       {/* Modern header with subtle gradient background */}
       <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-white p-4 sm:p-6 rounded-b-lg relative">
         <div className="flex flex-col space-y-3 sm:space-y-4">

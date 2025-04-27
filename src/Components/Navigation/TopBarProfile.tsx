@@ -45,7 +45,7 @@ export default function TopBarProfile({ username, onLogout }: TopBarProfileProps
 
   return (
     <nav className=" border-b border-gray-200 z-0">
-      <div className="max-w-6xl mx-auto px-3 sm:px-4">
+      <div className="max-w-4xl mx-auto px-3 sm:px-4">
         <div className="flex justify-between items-center">
           {/* Logo/Brand - using Bookmark logo */}
           <Link to="/home" className="flex items-center space-x-2">

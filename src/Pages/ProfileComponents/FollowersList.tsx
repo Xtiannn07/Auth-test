@@ -98,7 +98,7 @@ export default function FollowersList({ userId, type, isOpen, onClose }: Followe
               {filteredUsers.map(user => (
                 <li 
                   key={user.uid} 
-                  className="border-b last:border-b-0 hover:bg-gray-50 cursor-pointer"
+                  className="border-b last:border-b-0 hover:bg-gray-300 cursor-pointer"
                   onClick={() => handleUserClick(user.uid)}
                 >
                   <div className="flex items-center p-4">

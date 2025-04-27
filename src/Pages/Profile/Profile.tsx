@@ -5,7 +5,8 @@ import UserPosts from '../ProfileComponents/UserPosts';
 import UserReposts from '../ProfileComponents/UserReposts';
 import UserSavedPosts from '../ProfileComponents/UserSavedPosts';
 import FollowersList from '../ProfileComponents/FollowersList';
-import { Loader, Edit, BookmarkIcon, RefreshCw, MessageSquare } from 'lucide-react';
+import { Edit, BookmarkIcon, RefreshCw, MessageSquare } from 'lucide-react';
+import LoaderSpinner from '../../Components/UI/Loader';
 import UserService from '../../Services/UserService';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -113,7 +114,7 @@ export default function ProfilePage() {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
       >
-        <Loader className="w-8 h-8 text-blue-500 animate-spin" />
+        <LoaderSpinner />
       </motion.div>
     );
   }
@@ -139,7 +140,7 @@ export default function ProfilePage() {
 
   return (
     <motion.div 
-      className="max-w-6xl mx-auto pb-4 sm:pb-8"
+      className="max-w-4xl mx-auto pb-4 sm:pb-8"
       initial="hidden"
       animate="show"
       variants={containerVariants}

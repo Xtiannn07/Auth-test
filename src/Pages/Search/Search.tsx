@@ -111,7 +111,7 @@ const SearchPage = () => {
                   (searchTerm.length === 0 && suggestedError);
 
   return (
-    <div className="max-w-6xl mx-auto pb-6 ">
+    <div className="max-w-4xl mx-auto pb-6 ">
       <SearchHeader 
         searchTerm={searchTerm} 
         setSearchTerm={setSearchTerm}
@@ -127,7 +127,7 @@ const SearchPage = () => {
         {/* Loading state */}
         {isLoading && (
           <div>
-            {Array(3).fill(null).map((_, i) => (
+            {Array(10).fill(null).map((_, i) => (
               <SkeletonUser key={i} />
             ))}
           </div>

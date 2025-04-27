@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
 import PostCard from '../../Pages/PostComponents/PostCard';
-import UserSuggestion from '../UsersComponents/UserSuggestion';
-import { SkeletonCard, SkeletonUser } from '../../Components/UI/Skeleton';
+import SuggestionsSidebar from './../HomeComponents/SuggestionsSidebar';
+import { SkeletonCard } from '../../Components/UI/Skeleton';
 import { PostService } from '../../Services/PostService';
 import UserService from '../../Services/UserService';
 
@@ -13,8 +13,21 @@ const HomePage = () => {
   const currentUser = useSelector((state: RootState) => state.auth.currentUser);
   const queryClient = useQueryClient();
 
+  // Get cached data from localStorage on component mount
+  useEffect(() => {
+    const cachedSuggestions = localStorage.getItem('userSuggestions');
+    if (cachedSuggestions && currentUser) {
+      try {
+        const parsedData = JSON.parse(cachedSuggestions);
+        queryClient.setQueryData(['userSuggestions'], parsedData);
+      } catch (error) {
+        console.error('Error parsing cached suggestions:', error);
+      }
+    }
+  }, [queryClient, currentUser]);
+
   const {
-    data: posts,
+    data: posts = [],
     isLoading: postsLoading,
     error: postsError,
     refetch: refetchPosts,
@@ -26,11 +39,24 @@ const HomePage = () => {
   });
 
   const {
-    data: suggestions,
+    data: suggestions = [],
     isLoading: suggestionsLoading,
+    error: suggestionsError,
+    refetch: refetchSuggestions
   } = useQuery({
     queryKey: ['userSuggestions'],
-    queryFn: () => currentUser ? UserService.getUserSuggestions(currentUser.uid) : [], 
+    queryFn: async () => {
+      if (!currentUser) return [];
+      
+      const users = await UserService.getUserSuggestions(currentUser.uid);
+      
+      // Cache the results in localStorage
+      if (users && users.length > 0) {
+        localStorage.setItem('userSuggestions', JSON.stringify(users));
+      }
+      
+      return users;
+    },
     staleTime: 5 * 60 * 1000,
     enabled: !!currentUser,
   });
@@ -39,16 +65,10 @@ const HomePage = () => {
     setActiveFilter(filter);
   };
 
-  // handleLike is removed as usePostActions now handles likes directly
-
-  const handleFollow = async (userId: string) => {
-    if (!currentUser) return;
-    
-    try {
-      await UserService.followUser(currentUser.uid, userId);
+  // Function to manually refresh suggestions
+  const refreshSuggestions = () => {
+    if (queryClient) {
       queryClient.invalidateQueries({ queryKey: ['userSuggestions'] });
-    } catch (error) {
-      console.error('Error following user:', error);
     }
   };
 
@@ -56,7 +76,7 @@ const HomePage = () => {
     <div className="max-w-6xl mx-auto p-4">
       {/* Filter buttons */}
       <div className="bg-white rounded-lg shadow p-3 mb-2">
-        <div className=" flex space-x-4 ">
+        <div className="flex space-x-4">
           <button
             onClick={() => handleFilterChange('latest')}
             className={`px-4 py-2 rounded-xl ${
@@ -94,7 +114,7 @@ const HomePage = () => {
         <div className="flex-grow">
           {postsLoading ? (
             Array(3).fill(null).map((_, i) => (
-              <SkeletonCard key={i} />
+              <SkeletonCard key={`skeleton-post-${i}`} />
             ))
           ) : postsError ? (
             <div className="bg-white rounded-lg shadow p-6 text-center">
@@ -109,9 +129,8 @@ const HomePage = () => {
           ) : posts && posts.length > 0 ? (
             posts.map((post, index) => (
               <PostCard 
-                key={post.id} 
-                // Use type assertion to convince TypeScript that the post has the required properties
-                post={post as any}
+                key={post.id || `post-${index}`} 
+                post={post}
                 currentUser={currentUser}
                 customAnimation={{ delay: index * 0.1 }}
               />
@@ -136,38 +155,13 @@ const HomePage = () => {
           )}
         </div>
 
-        {/* Right sidebar */}
-        <div className="w-full md:w-60 lg:w-96">
-          <div className="bg-white rounded-lg shadow p-4 sticky top-4">
-            <h3 className="font-medium mb-4 text-lg">Who to follow</h3>
-            
-            {suggestionsLoading ? (
-              Array(3).fill(null).map((_, i) => (
-                <SkeletonUser key={i} />
-              ))
-            ) : suggestions && suggestions.length > 0 ? (
-              suggestions.map(user => (
-                <UserSuggestion 
-                  key={user.id} 
-                  user={user} 
-                  onFollow={() => user.id && handleFollow(user.id)}
-                />
-              ))
-            ) : (
-              <p className="text-gray-500 text-center py-4">
-                No suggestions available
-              </p>
-            )}
-            
-            {suggestions && suggestions.length > 0 && (
-              <div className="mt-4 text-center">
-                <button className="text-gradient-to-r from-gray-900 via-gray-800 to-gray-900 hover:text-blue-700">
-                  See More
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
+        {/* Suggestions Sidebar */}
+        <SuggestionsSidebar 
+          suggestions={suggestions}
+          isLoading={suggestionsLoading}
+          error={suggestionsError}
+          onRefresh={refreshSuggestions}
+        />
       </div>
     </div>
   );
