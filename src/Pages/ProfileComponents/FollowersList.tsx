@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { type UserProfile } from '../../Services/UserService';
 import UserService from '../../Services/UserService';
 import { useNavigate } from 'react-router-dom';
-import { X, Search, User, Loader } from 'lucide-react';
+import { X, Search, User } from 'lucide-react';
+import LoaderSpinner from '../../Components/UI/Loader';
 
 interface FollowersListProps {
   userId: string;
@@ -90,7 +91,7 @@ export default function FollowersList({ userId, type, isOpen, onClose }: Followe
         <div className="overflow-y-auto flex-grow">
           {isLoading ? (
             <div className="flex justify-center items-center h-40">
-              <Loader className="animate-spin rounded-full h-8 w-8 text-black"></Loader>
+              <LoaderSpinner/>
             </div>
           ) : filteredUsers.length > 0 ? (
             <ul>

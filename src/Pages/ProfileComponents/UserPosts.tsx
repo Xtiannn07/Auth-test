@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
 import { PostService } from '../../Services/PostService';
 import PostCard from '../PostComponents/PostCard';
-import { Loader } from 'lucide-react';
+import LoaderSpinner from '../../Components/UI/Loader';
 import { useProfile } from '../../Contexts/ProfileContext';
 
 // Define post interface matching PostCard requirements
@@ -74,7 +74,7 @@ const UserPosts: React.FC<UserPostsProps> = ({ userId, includeFollowing = false 
   if (loading) {
     return (
       <div className="flex justify-center items-center py-8">
-        <Loader className="w-6 h-6 text-black animate-spin" />
+        <LoaderSpinner />
       </div>
     );
   }

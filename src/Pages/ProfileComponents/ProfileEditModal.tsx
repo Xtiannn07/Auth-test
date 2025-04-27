@@ -68,7 +68,7 @@ const ProfileEditModal = ({ profile, onClose, onSave }: ProfileEditModalProps) =
             className={`px-4 py-1 rounded-full text-sm font-medium ${
               isSubmitting || !displayName.trim()
               ? 'bg-gray-200 text-gray-500'
-              : 'bg-blue-500 text-white hover:bg-blue-600'
+              : 'bg-gray-800 text-white hover:bg-gray-300 hover:text-gray-900'
             }`}
           >
             {isSubmitting ? 'Saving...' : 'Save'}
@@ -99,10 +99,10 @@ const ProfileEditModal = ({ profile, onClose, onSave }: ProfileEditModalProps) =
               <button
                 type="button"
                 onClick={() => setIsImageSelectorOpen(true)}
-                className="absolute bottom-0 right-0 bg-blue-500 rounded-full p-2 cursor-pointer hover:bg-blue-600 transition-colors"
+                className="group absolute bottom-0 right-0 bg-gray-800 rounded-full p-2 cursor-pointer hover:bg-gray-100 transition-colors"
                 aria-label="Change profile picture"
               >
-                <Camera size={16} className="text-white" />
+                <Camera size={16} className="text-white group-hover:text-gray-800" />
               </button>
             </div>
           </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { X, Loader } from 'lucide-react';
+import { X} from 'lucide-react';
 import { ImageService, ProfileImage } from '../../Services/ImageService';
+import LoaderSpinner from './Loader';
 
 interface ImageSelectorProps {
   isOpen: boolean;
@@ -48,8 +49,8 @@ export default function ImageSelector({ isOpen, onClose, onSelect, currentImageU
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 backdrop-blur-xs backdrop-saturate-150 bg-opacity-50 flex items-center justify-center z-50 mb-9 p-4">
+      <div className="bg-white rounded-lg max-w-lg w-full max-h-[60vh] md:max-h-[80vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
           <h2 className="text-lg font-medium">Choose Profile Picture</h2>
@@ -66,7 +67,7 @@ export default function ImageSelector({ isOpen, onClose, onSelect, currentImageU
         <div className="p-4 overflow-y-auto flex-1">
           {loading ? (
             <div className="flex justify-center items-center h-48">
-              <Loader className="w-8 h-8 text-blue-500 animate-spin" />
+              <LoaderSpinner />
             </div>
           ) : (
             <div className="grid grid-cols-3 gap-4">
@@ -76,7 +77,7 @@ export default function ImageSelector({ isOpen, onClose, onSelect, currentImageU
                   onClick={() => handleImageSelect(image.url)}
                   className={`aspect-square rounded-lg overflow-hidden border-2 transition-all
                     ${selectedImageUrl === image.url 
-                      ? 'border-blue-500 ring-2 ring-blue-300' 
+                      ? 'border-gray-800 ring-4 ring-gray-500' 
                       : 'border-gray-200 hover:border-gray-300'}`}
                 >
                   <img
@@ -113,7 +114,7 @@ export default function ImageSelector({ isOpen, onClose, onSelect, currentImageU
                 </button>
                 <button
                   onClick={handleConfirmSelection}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-full hover:bg-blue-600"
+                  className="px-4 py-2 bg-gray-800 text-white rounded-full hover:bg-gray-100 hover:text-gray-800"
                 >
                   Confirm
                 </button>
@@ -129,7 +130,7 @@ export default function ImageSelector({ isOpen, onClose, onSelect, currentImageU
             disabled={!selectedImageUrl}
             className={`w-full py-2 rounded-full font-medium 
               ${selectedImageUrl
-                ? 'bg-blue-500 text-white hover:bg-blue-600'
+                ? 'bg-gray-800 text-white hover:bg-blue-100'
                 : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
           >
             Save Changes

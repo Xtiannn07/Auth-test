@@ -3,7 +3,8 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
 import { PostService, Repost } from '../../Services/PostService';
 import PostCard from '../PostComponents/PostCard';
-import { Loader, RefreshCcw } from 'lucide-react';
+import { RefreshCcw } from 'lucide-react';
+import LoaderSpinner from '../../Components/UI/Loader';
 import { db } from '../../Services/Firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { useState, useEffect } from 'react';
@@ -115,7 +116,7 @@ const UserReposts: React.FC<UserRepostsProps> = ({ userId }) => {
   if (repostsLoading || loading) {
     return (
       <div className="flex justify-center items-center py-8">
-        <Loader className="w-6 h-6 text-blue-500 animate-spin" />
+        <LoaderSpinner />
       </div>
     );
   }
