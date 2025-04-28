@@ -83,25 +83,25 @@ export const PostFormSkeleton: FC = () => (
   </div>
 );
 
-// New skeleton for advertisement container
+// Updated Advertisement Skeleton to match real component dimensions
 export const AdvertisementSkeleton: FC = () => (
-  <div className="bg-white rounded-lg shadow p-4 animate-pulse">
+  <div className="bg-white rounded-lg shadow p-4 animate-pulse w-full">
     <div className="h-4 bg-gray-200 rounded w-24 mb-4"></div>
     <div className="w-full h-40 bg-gray-200 rounded"></div>
   </div>
 );
 
-// New skeleton for the sidebar suggestions section
+// Updated Sidebar Suggestions Skeleton to better match real component
 export const SidebarSuggestionsSkeleton: FC = () => (
-  <div className="bg-white rounded-lg shadow p-4 animate-pulse">
+  <div className="bg-white rounded-lg shadow p-4 animate-pulse w-full">
     <div className="flex justify-between items-center mb-4">
       <div className="h-4 bg-gray-200 rounded w-24"></div>
       <div className="h-4 bg-gray-200 rounded w-16"></div>
     </div>
     
-    {/* 3 user skeletons */}
-    {[...Array(3)].map((_, index) => (
-      <div key={index} className="flex items-center justify-between py-3">
+    {/* 5 user skeletons to match the slice(0, 5) */}
+    {[...Array(5)].map((_, index) => (
+      <div key={index} className="flex items-center justify-between py-3 mb-3">
         <div className="flex items-center">
           <div className="w-10 h-10 rounded-full bg-gray-200 mr-3"></div>
           <div>

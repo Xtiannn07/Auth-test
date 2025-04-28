@@ -1,7 +1,7 @@
 // src/Components/UsersActionButtons.tsx
 import { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import {  UserPlus, X } from 'lucide-react';
+import { UserPlus, X } from 'lucide-react';
 import { followUser, removeUserSuggestion } from '../SearchComponents/SearchApi';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
@@ -15,6 +15,7 @@ interface UsersActionButtonsProps {
   isLoading?: boolean;
   onFollowStatusChange?: (isFollowing: boolean) => void;
   onRemove?: () => void;
+  compact?: boolean; // New prop for compact mode
 }
 
 const UsersActionButtons: React.FC<UsersActionButtonsProps> = ({ 
@@ -24,7 +25,8 @@ const UsersActionButtons: React.FC<UsersActionButtonsProps> = ({
   isFollowing = false,
   isLoading: isCheckingStatus = false,
   onFollowStatusChange,
-  onRemove
+  onRemove,
+  compact = false // Default to standard size
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSliding, setIsSliding] = useState(false);
@@ -117,7 +119,7 @@ const UsersActionButtons: React.FC<UsersActionButtonsProps> = ({
         <button
           onClick={handleFollow}
           disabled={isLoading || isCheckingStatus || currentIsFollowing}
-          className={`px-3 py-1 rounded-full text-sm font-medium flex items-center
+          className={`${compact ? 'px-2 py-0.5' : 'px-3 py-1'} rounded-full ${compact ? 'text-xs' : 'text-sm'} font-medium flex items-center
             ${currentIsFollowing 
               ? 'border border-gray-300 text-gray-700' 
               : 'bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-white hover:bg-blue-900'}
@@ -125,20 +127,20 @@ const UsersActionButtons: React.FC<UsersActionButtonsProps> = ({
             transition-all duration-200`}
           aria-label={currentIsFollowing ? "Following" : "Follow"}
         >
-          {!currentIsFollowing && <UserPlus size={16} className="mr-1" />}
+          {!currentIsFollowing && <UserPlus size={compact ? 14 : 16} className={compact ? '' : 'mr-1'} />}
           {isLoading || isCheckingStatus 
             ? '...' 
             : currentIsFollowing 
               ? 'Following' 
-              : 'Follow'}
+              : compact ? null : 'Follow'}
         </button>
         
         <button
           onClick={handleRemove}
-          className="p-2 rounded-full hover:bg-gray-200 text-gray-500"
+          className={`${compact ? 'p-1' : 'p-2'} rounded-full hover:bg-gray-200 text-gray-500`}
           aria-label="Remove from suggestions"
         >
-          <X size={18} />
+          <X size={compact ? 14 : 18} />
         </button>
       </div>
     </>

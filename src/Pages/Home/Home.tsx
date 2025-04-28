@@ -75,7 +75,7 @@ const HomePage = () => {
   return (
     <div className="max-w-6xl mx-auto p-4">
       {/* Filter buttons */}
-      <div className="bg-white rounded-lg shadow p-3 mb-2">
+      <div className="bg-white rounded-lg shadow p-3 mb-4">
         <div className="flex space-x-4">
           <button
             onClick={() => handleFilterChange('latest')}
@@ -110,8 +110,10 @@ const HomePage = () => {
         </div>
       </div>
 
+      {/* Main content layout with proper structure for sticky sidebar */}
       <div className="flex flex-col md:flex-row gap-4">
-        <div className="flex-grow">
+        {/* Main content area - posts */}
+        <div className="flex-grow md:max-w-[calc(100%-16rem)] lg:max-w-[calc(100%-26rem)]">
           {postsLoading ? (
             Array(3).fill(null).map((_, i) => (
               <SkeletonCard key={`skeleton-post-${i}`} />
@@ -155,13 +157,15 @@ const HomePage = () => {
           )}
         </div>
 
-        {/* Suggestions Sidebar */}
-        <SuggestionsSidebar 
-          suggestions={suggestions}
-          isLoading={suggestionsLoading}
-          error={suggestionsError}
-          onRefresh={refreshSuggestions}
-        />
+        {/* Sidebar container with fixed width */}
+        <div className="w-full md:w-64 lg:w-96 sticky top-4">
+          <SuggestionsSidebar 
+            suggestions={suggestions}
+            isLoading={suggestionsLoading}
+            error={suggestionsError}
+            onRefresh={refreshSuggestions}
+          />
+        </div>
       </div>
     </div>
   );

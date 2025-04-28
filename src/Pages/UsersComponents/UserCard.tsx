@@ -9,9 +9,10 @@ interface UsersCardProps {
   user: User;
   onCardRemove?: () => void;
   className?: string;
+  compact?: boolean; // New prop for compact mode
 }
 
-const UsersCard: React.FC<UsersCardProps> = ({ user, onCardRemove }) => {
+const UsersCard: React.FC<UsersCardProps> = ({ user, onCardRemove, className, compact }) => {
   const [isRemoving, setIsRemoving] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -68,17 +69,18 @@ const UsersCard: React.FC<UsersCardProps> = ({ user, onCardRemove }) => {
 
   return (
     <div 
-      className={`bg-white rounded-lg shadow-sm p-3 sm:p-4 mb-3 flex items-center justify-between
+      className={`bg-white rounded-lg shadow-sm ${compact ? 'p-2' : 'p-3 sm:p-4'} mb-3 flex items-center justify-between
         ${isRemoving ? 'transform translate-x-full opacity-0' : 'transform translate-x-0 opacity-100'}
         transition-all duration-300 ease-out hover:bg-gray-50
+        ${className || ''}
       `}
     >
       <Link 
         to={`/user/${user.id}`} 
         className="flex items-center flex-1 min-w-0 group"
       >
-        {/* Profile image - smaller on mobile */}
-        <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gray-200 mr-3 sm:mr-4 flex-shrink-0 flex items-center justify-center border border-gray-100 overflow-hidden shadow-sm group-hover:shadow-md transition-shadow">
+        {/* Profile image - smaller in compact mode */}
+        <div className={`${compact ? 'w-8 h-8' : 'w-12 h-12 sm:w-14 sm:h-14'} rounded-full bg-gray-200 ${compact ? 'mr-2' : 'mr-3 sm:mr-4'} flex-shrink-0 flex items-center justify-center border border-gray-100 overflow-hidden shadow-sm group-hover:shadow-md transition-shadow`}>
           {user.photoURL ? (
             <img 
               src={user.photoURL} 
@@ -86,18 +88,18 @@ const UsersCard: React.FC<UsersCardProps> = ({ user, onCardRemove }) => {
               className="w-full h-full rounded-full object-cover"
             />
           ) : (
-            <span className="text-gray-600 font-medium text-base sm:text-lg">
+            <span className={`text-gray-600 font-medium ${compact ? 'text-xs' : 'text-base sm:text-lg'}`}>
               {userInitial}
             </span>
           )}
         </div>
         
         <div className="min-w-0 flex-1 space-y-0.5">
-          <h3 className="font-semibold text-gray-900 text-sm sm:text-base truncate group-hover:text-gray-300 transition-colors">
+          <h3 className={`font-semibold text-gray-900 ${compact ? 'text-xs' : 'text-sm sm:text-base'} truncate group-hover:text-gray-300 transition-colors`}>
             {user.displayName || displayUsername}
           </h3>
-          <p className="text-gray-500 text-xs sm:text-sm truncate">@{displayUsername}</p>
-          {user.bio && (
+          <p className={`text-gray-500 ${compact ? 'text-xs' : 'text-xs sm:text-sm'} truncate`}>@{displayUsername}</p>
+          {user.bio && !compact && (
             <p className="text-gray-600 text-xs sm:text-sm truncate mt-0.5 hidden sm:block">
               {user.bio}
             </p>
@@ -105,7 +107,7 @@ const UsersCard: React.FC<UsersCardProps> = ({ user, onCardRemove }) => {
         </div>
       </Link>
       
-      <div className="ml-3 sm:ml-4 flex-shrink-0">
+      <div className={`${compact ? 'ml-2' : 'ml-3 sm:ml-4'} flex-shrink-0`}>
         <UsersActionButtons 
           userId={user.id || user.uid}
           username={user.username}
@@ -114,6 +116,7 @@ const UsersCard: React.FC<UsersCardProps> = ({ user, onCardRemove }) => {
           onFollowStatusChange={handleFollowStatusChange}
           onRemove={handleRemove}
           isLoading={isLoading}
+          compact={compact} // Pass the compact prop to UsersActionButtons
         />
       </div>
     </div>
