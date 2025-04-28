@@ -108,7 +108,7 @@ const HomePage = () => {
       {/* Main content layout with proper structure for sticky sidebar */}
       <div className="flex flex-col md:flex-row gap-4">
         {/* Main content area - posts */}
-        <div className="flex-grow md:max-w-[calc(100%-16rem)] lg:max-w-[calc(100%-26rem)]">
+        <div className="flex-grow md:max-w-[calc(100%-16rem)] lg:max-w-[calc(100%-24rem)]">
           {postsLoading ? (
             Array(3).fill(null).map((_, i) => (
               <SkeletonCard key={`skeleton-post-${i}`} />
