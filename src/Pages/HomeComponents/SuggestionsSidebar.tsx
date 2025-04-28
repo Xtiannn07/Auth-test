@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
 import UserCard from '../UsersComponents/UserCard';
-import { SkeletonUser, AdvertisementSkeleton, SidebarSuggestionsSkeleton } from '../../Components/UI/Skeleton';
+import { AdvertisementSkeleton, SidebarSuggestionsSkeleton } from '../../Components/UI/Skeleton';
 import { removeUserSuggestion, isUserFollowed } from '../SearchComponents/SearchApi';
 import type { User } from '../SearchComponents/SearchApi';
 
@@ -94,7 +94,7 @@ const SuggestionsSidebar: React.FC<SuggestionsSidebarProps> = ({
       )}
 
       {/* Sticky container that will handle the positioning */}
-      <div className="sticky top-4">
+      <div className="w-full">
         {/* Suggestions Card */}
         {isLoading ? (
           <SidebarSuggestionsSkeleton />

@@ -65,12 +65,7 @@ const HomePage = () => {
     setActiveFilter(filter);
   };
 
-  // Function to manually refresh suggestions
-  const refreshSuggestions = () => {
-    if (queryClient) {
-      queryClient.invalidateQueries({ queryKey: ['userSuggestions'] });
-    }
-  };
+  // We removed the refreshSuggestions function and will use refetchSuggestions directly
 
   return (
     <div className="max-w-6xl mx-auto p-4">
@@ -158,12 +153,12 @@ const HomePage = () => {
         </div>
 
         {/* Sidebar container with fixed width */}
-        <div className="w-full md:w-64 lg:w-96 sticky top-4">
+        <div className="w-full md:w-64 lg:w-96 overflow-visible sticky top-4 self-start">
           <SuggestionsSidebar 
             suggestions={suggestions}
             isLoading={suggestionsLoading}
             error={suggestionsError}
-            onRefresh={refreshSuggestions}
+            onRefresh={refetchSuggestions}
           />
         </div>
       </div>

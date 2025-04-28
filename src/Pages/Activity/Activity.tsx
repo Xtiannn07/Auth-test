@@ -6,7 +6,7 @@ import { RootState } from '../../store/store';
 import { Activity as ActivityType, ActivityService } from '../../Services/ActivityService';
 import { formatDistanceToNow } from 'date-fns';
 import { ActivitySkeleton } from '../../Components/UI/Skeleton';
-import { motion } from 'framer-motion';
+import { motion, Variants } from 'framer-motion';
 
 // Helper type for Firestore Timestamp
 interface FirestoreTimestamp {
@@ -152,7 +152,7 @@ export default function Activity() {
   };
 
   // Animation variants
-  const containerVariants = {
+  const containerVariants: Variants = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
@@ -162,7 +162,7 @@ export default function Activity() {
     }
   };
 
-  const itemVariants = {
+  const itemVariants: Variants = {
     hidden: { y: 20, opacity: 0 },
     show: { 
       y: 0, 
@@ -175,13 +175,13 @@ export default function Activity() {
     }
   };
 
-  const skeletonVariants = {
+  const skeletonVariants: Variants = {
     initial: { opacity: 0.6 },
     animate: { 
       opacity: 1,
       transition: {
         repeat: Infinity,
-        repeatType: "reverse",
+        repeatType: "reverse", // Fixed: Using literal "reverse" instead of string type
         duration: 0.8
       }
     }

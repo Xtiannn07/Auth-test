@@ -32,9 +32,6 @@ export function usePageMutation<TData = unknown, TError = unknown, TVariables = 
   mutationFn: (variables: TVariables) => Promise<TData>,
   options?: Omit<UseMutationOptions<TData, TError, TVariables, TContext>, 'mutationFn'>
 ) {
-  const queryClient = useQueryClient();
-  const location = useLocation();
-  
   return useMutation({
     mutationFn,
     onSuccess: (data, variables, context) => {

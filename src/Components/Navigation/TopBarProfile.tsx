@@ -44,7 +44,7 @@ export default function TopBarProfile({ username, onLogout }: TopBarProfileProps
   };
 
   return (
-    <nav className=" border-b border-gray-200 z-0">
+    <nav className="border-b border-gray-200 z-0">
       <div className="max-w-4xl mx-auto px-3 sm:px-4">
         <div className="flex justify-between items-center">
           {/* Logo/Brand - using Bookmark logo */}
@@ -66,7 +66,7 @@ export default function TopBarProfile({ username, onLogout }: TopBarProfileProps
             className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors"
             aria-label="Open menu"
             aria-expanded={showMenu ? "true" : "false"}
-            aria-haspopup="true"
+            aria-haspopup="menu"
           >
             <MoreVertical className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
           </button>

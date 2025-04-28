@@ -7,7 +7,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
 import { useProfile } from '../../Contexts/ProfileContext';
 import { PostFormSkeleton } from '../../Components/UI/Skeleton';
-import { motion } from 'framer-motion';
+import { motion, Variants } from 'framer-motion';
 
 interface PostPageProps {
   maxContentLength?: number;
@@ -150,7 +150,7 @@ export default function PostPage({
     tap: { scale: 0.97 }
   };
 
-  const skeletonVariants = {
+  const skeletonVariants: Variants = {
     initial: { opacity: 0.6 },
     animate: { 
       opacity: 1,
@@ -160,7 +160,7 @@ export default function PostPage({
         duration: 0.8
       }
     }
-  };
+  } as const;
 
   if (!currentUser) {
     return null; // Don't render anything if not authenticated

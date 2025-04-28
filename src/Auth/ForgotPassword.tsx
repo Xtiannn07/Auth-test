@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
+import { AppDispatch } from '../store/store'; // Import your store's AppDispatch type
 import { resetUserPassword } from '../store/authSlice';
 import Input from '../Components/UI/Input';
 import Button from '../Components/UI/Button';
@@ -11,10 +12,11 @@ export default function ForgotPassword() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
-  const dispatch = useDispatch();
+  // Use the typed dispatch
+  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
     try {
@@ -29,7 +31,7 @@ export default function ForgotPassword() {
       // Optional: Redirect after a delay
       setTimeout(() => navigate('/signin'), 3000);
     } catch (error) {
-      setError('Failed to reset password: ' + error);
+      setError(`Failed to reset password: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setLoading(false);
     }
