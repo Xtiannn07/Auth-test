@@ -9,6 +9,7 @@ import { useProfile } from '../Contexts/ProfileContext';
 import Input from '../Components/UI/Input';
 import Button from '../Components/UI/Button';
 import SignInFooter from './Footer';
+import FeatureModal from '../Components/UI/FeatureModal';
 
 // Animation variants
 const containerVariants = {
@@ -58,6 +59,7 @@ export default function SignUp() {
   const [statusMessage, setStatusMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingProfileData, setPendingProfileData] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   
   const dispatch = useDispatch<AppDispatch>();
   const { error, loading, currentUser } = useSelector((state: RootState) => state.auth);
@@ -271,12 +273,13 @@ export default function SignUp() {
     >
       <div className="w-full max-w-md flex flex-col items-center flex-1">
         <motion.div 
-          className="mb-12 md:mb-22 text-gray-600 text-[12px]"
+          className="mb-22 text-gray-600 text-[12px] cursor-pointer"
           variants={itemVariants}
+          onClick={() => setIsModalOpen(true)}
         >
           English (US)
         </motion.div>
-        
+          
         <motion.div 
           className="mb-6"
           variants={logoVariants}
@@ -436,6 +439,15 @@ export default function SignUp() {
       >
         <SignInFooter />
       </motion.div>
+
+      {/* Feature Modal */}
+      <FeatureModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)}
+        title="Language Selection Coming Soon"
+        message="I'm working hard to bring you multiple language options. This feature will be available soon!"
+      />
+
     </motion.div>
   );
 }

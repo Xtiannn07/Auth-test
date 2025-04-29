@@ -7,6 +7,7 @@ import { RootState, AppDispatch } from '../store/store';
 import Input from '../Components/UI/Input';
 import Button from '../Components/UI/Button';
 import SignInFooter from './Footer';
+import FeatureModal from '../Components/UI/FeatureModal';
 
 // Animation variants
 const containerVariants = {
@@ -51,6 +52,7 @@ export default function SignIn() {
   const [password, setPassword] = useState<string>('');
   const dispatch = useDispatch<AppDispatch>();
   const { error, loading } = useSelector((state: RootState) => state.auth);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -100,10 +102,11 @@ export default function SignIn() {
     >
       {/* Main content wrapper that fills the available space */}
       <div className="w-full max-w-md flex flex-col items-center flex-1">
-        {/* Language selector at top */}
+    {/* Language selector */}
         <motion.div 
-          className="mb-22 text-gray-600 text-[12px]"
+          className="mb-22 text-gray-600 text-[12px] cursor-pointer"
           variants={itemVariants}
+          onClick={() => setIsModalOpen(true)}
         >
           English (US)
         </motion.div>
@@ -181,7 +184,7 @@ export default function SignIn() {
               className="text-center"
               variants={itemVariants}
             >
-              <Link to="/forgot" className="text-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-sm font-medium">
+              <Link to="/forgot" className="text-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-sm font-medium hover:underline">
                 Forgot password?
               </Link>
             </motion.div>
@@ -197,6 +200,14 @@ export default function SignIn() {
       >
         <SignInFooter />
       </motion.div>
+
+      {/* Feature Modal */}
+      <FeatureModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)}
+        title="Language Selection Coming Soon"
+        message="I'm working hard to bring you multiple language options. This feature will be available soon!"
+      />
     </motion.div>
   );
 }
