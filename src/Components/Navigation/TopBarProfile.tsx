@@ -35,7 +35,10 @@ export default function TopBarProfile({ username, onLogout }: TopBarProfileProps
       if (onLogout) {
         onLogout();
       }
-      navigate('/signin');
+      // Navigate to signin and replace history to prevent back navigation
+      navigate('/signin', { replace: true });
+      // Optionally, force a full reload to clear any cached state
+      window.location.reload();
     } catch (error) {
       console.error('Logout failed:', error);
     }
