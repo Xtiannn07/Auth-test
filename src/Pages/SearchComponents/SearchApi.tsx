@@ -46,20 +46,35 @@ export const isUserFollowed = async (followerId: string, followingId: string): P
   }
 };
 
-// Remove a user from suggestions - delegating to UserService
+// In-memory hidden suggestions store (resets on page refresh)
+const hiddenSuggestionsMap: Record<string, Set<string>> = {};
+
+// Remove user suggestion without persistence (in-memory only)
 export const removeUserSuggestion = async (userId: string, currentUserId: string): Promise<void> => {
   try {
-    await UserService.removeUserSuggestion(userId, currentUserId);
+    // Initialize the Set for this user if it doesn't exist
+    if (!hiddenSuggestionsMap[currentUserId]) {
+      hiddenSuggestionsMap[currentUserId] = new Set<string>();
+    }
+    
+    // Add userId to the hidden suggestions Set
+    hiddenSuggestionsMap[currentUserId].add(userId);
   } catch (error) {
     console.error("Error removing user suggestion:", error);
     throw error;
   }
 };
 
-// Get list of hidden user suggestions - delegating to UserService
-export const getHiddenSuggestions = async (currentUserId: string): Promise<string[]> => {
+// Get hidden suggestions from in-memory store (resets on page refresh)
+export const getHiddenSuggestions = (currentUserId: string): string[] => {
   try {
-    return await UserService.getHiddenSuggestions(currentUserId);
+    // Return empty array if no hidden suggestions for this user
+    if (!hiddenSuggestionsMap[currentUserId]) {
+      return [];
+    }
+    
+    // Convert Set to array
+    return Array.from(hiddenSuggestionsMap[currentUserId]);
   } catch (error) {
     console.error("Error getting hidden suggestions:", error);
     return [];

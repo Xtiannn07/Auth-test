@@ -81,10 +81,13 @@ const UsersActionButtons: React.FC<UsersActionButtonsProps> = ({
     // Wait for slide animation to complete
     setTimeout(async () => {
       try {
+        // Use in-memory client-side approach (resets on page refresh)
         await removeUserSuggestion(userId, currentUser.uid);
-        // Invalidate queries to refresh user lists
-        queryClient.invalidateQueries({ queryKey: ['users'] });
-        queryClient.invalidateQueries({ queryKey: ['userSuggestions'] });
+        
+        // Update the React Query cache to remove the user from suggestions immediately
+        queryClient.setQueryData(['userSuggestions'], (oldData: any[] = []) => 
+          oldData.filter(user => user.id !== userId)
+        );
         
         if (onRemove) {
           onRemove();

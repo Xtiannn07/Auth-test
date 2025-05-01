@@ -4,7 +4,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
 import UserCard from '../UsersComponents/UserCard';
 import { AdvertisementSkeleton, SidebarSuggestionsSkeleton } from '../../Components/UI/Skeleton';
-import { removeUserSuggestion, isUserFollowed } from '../SearchComponents/SearchApi';
+import { removeUserSuggestion, isUserFollowed, getHiddenSuggestions } from '../SearchComponents/SearchApi';
 import type { User } from '../SearchComponents/SearchApi';
 
 interface SuggestionsSidebarProps {
@@ -24,18 +24,26 @@ const SuggestionsSidebar: React.FC<SuggestionsSidebarProps> = ({
   const currentUser = useSelector((state: RootState) => state.auth.currentUser);
   const queryClient = useQueryClient();
 
-  // Filter out followed users
+  // Filter out followed users and hidden suggestions
   useEffect(() => {
-    const filterFollowedUsers = async () => {
+    const filterSuggestions = async () => {
       if (!currentUser || !suggestions || suggestions.length === 0) {
         setFilteredSuggestions([]);
         return;
       }
 
-      // Filter suggestions to exclude followed users
-      const notFollowedUsers = await Promise.all(
+      // Get hidden suggestions from in-memory store (resets on page refresh)
+      const hiddenUserIds = currentUser.uid ? getHiddenSuggestions(currentUser.uid) : [];
+
+      // Filter suggestions to exclude followed users and hidden suggestions
+      const visibleSuggestions = await Promise.all(
         suggestions.map(async (user) => {
           if (!user.id || !currentUser.uid) return null;
+          
+          // Skip if user is in hidden suggestions
+          if (hiddenUserIds.includes(user.id)) {
+            return null;
+          }
           
           try {
             const isFollowing = await isUserFollowed(currentUser.uid, user.id);
@@ -48,23 +56,23 @@ const SuggestionsSidebar: React.FC<SuggestionsSidebarProps> = ({
       );
 
       // Filter out null values and set the filtered suggestions
-      setFilteredSuggestions(notFollowedUsers.filter(Boolean) as User[]);
+      setFilteredSuggestions(visibleSuggestions.filter(Boolean) as User[]);
     };
 
-    filterFollowedUsers();
+    filterSuggestions();
   }, [suggestions, currentUser]);
 
   // Handle when a user is removed from suggestions
   const handleUserRemove = async (userId: string) => {
     if (currentUser && userId) {
       try {
-        // Use the SearchApi function to remove the user suggestion
+        // This now stores the hidden suggestion in localStorage
         await removeUserSuggestion(userId, currentUser.uid);
         
-        // Update the filtered suggestions by removing the user
+        // Update the UI immediately by filtering out the removed user
         setFilteredSuggestions(prev => prev.filter(user => user.id !== userId));
         
-        // Update the cached suggestions by filtering out the removed user
+        // Update the cached suggestions to maintain consistency across components
         queryClient.setQueryData(['userSuggestions'], (oldData: User[] = []) => 
           oldData.filter(user => user.id !== userId)
         );
