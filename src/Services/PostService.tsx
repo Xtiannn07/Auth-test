@@ -154,7 +154,7 @@ export const PostService = {
 
   // === LIKES FUNCTIONALITY ===
   
-  // Add a like to a post
+  // Add a like to a post - FIXED
   async likePost(postId: string, userId: string, displayName: string) {
     try {
       const likeRef = doc(db, `posts/${postId}/likes/${userId}`);
@@ -191,11 +191,13 @@ export const PostService = {
         try {
           // Get user profile for photo
           const userProfile = await UserService.getUserProfile(userId);
-          ActivityService.createLikeActivity(
+          // Use toggleLikeActivity instead of non-existent createLikeActivity
+          ActivityService.toggleLikeActivity(
             userId,
             displayName,
             postData.author.id,
             postId,
+            true, // isLiking parameter set to true for like action
             userProfile.photoURL
           ).catch(err => console.error('Failed to create like activity:', err));
         } catch (activityError) {
@@ -209,16 +211,55 @@ export const PostService = {
     }
   },
   
-  // Remove a like from a post
-  async unlikePost(postId: string, userId: string) {
-    const likeRef = doc(db, `posts/${postId}/likes/${userId}`);
-    await deleteDoc(likeRef);
-    
-    // Also update the count in the main post document
-    const postRef = doc(db, 'posts', postId);
-    await updateDoc(postRef, {
-      likeCount: increment(-1)
-    });
+  // Remove a like from a post - FIXED
+  async unlikePost(postId: string, userId: string, displayName: string) {
+    try {
+      const likeRef = doc(db, `posts/${postId}/likes/${userId}`);
+      
+      // Get post data for activity notification
+      const postRef = doc(db, 'posts', postId);
+      const postDoc = await getDoc(postRef);
+      if (!postDoc.exists()) {
+        throw new Error('Post not found');
+      }
+      const postData = postDoc.data();
+      
+      // Create batch operations
+      const batch = writeBatch(db);
+      
+      // Remove like
+      batch.delete(likeRef);
+      
+      // Update count in main post
+      batch.update(postRef, {
+        likeCount: increment(-1)
+      });
+      
+      // Commit batch
+      await batch.commit();
+      
+      // Toggle activity with isLiking set to false to remove it
+      if (postData?.author?.id !== userId) {
+        try {
+          // Get user profile for consistency
+          const userProfile = await UserService.getUserProfile(userId);
+          ActivityService.toggleLikeActivity(
+            userId,
+            displayName,
+            postData.author.id, 
+            postId,
+            false, // isLiking parameter set to false for unlike action
+            userProfile.photoURL
+          ).catch(err => console.error('Failed to remove like activity:', err));
+        } catch (activityError) {
+          console.error('Error removing like activity:', activityError);
+          // Don't throw - the unlike operation succeeded
+        }
+      }
+    } catch (error) {
+      console.error('Error unliking post:', error);
+      throw error;
+    }
   },
   
   // Get likes for a post (for initial load)
