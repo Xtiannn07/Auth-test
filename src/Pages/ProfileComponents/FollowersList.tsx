@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { type UserProfile } from '../../Services/UserService';
 import UserService from '../../Services/UserService';
-import { useNavigate } from 'react-router-dom';
-import { X, Search, User } from 'lucide-react';
+import { X, Search } from 'lucide-react';
 import LoaderSpinner from '../../Components/UI/Loader';
+import UsersCard from '../UsersComponents/UserCard';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../store/store';
 
 interface FollowersListProps {
   userId: string;
@@ -16,7 +18,8 @@ export default function FollowersList({ userId, type, isOpen, onClose }: Followe
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const navigate = useNavigate();
+  // Get current user from Redux store to check follow status
+  const currentUser = useSelector((state: RootState) => state.auth.currentUser);
 
   useEffect(() => {
     if (isOpen) {
@@ -41,11 +44,6 @@ export default function FollowersList({ userId, type, isOpen, onClose }: Followe
     }
   };
 
-  const handleUserClick = (userId: string) => {
-    navigate(`/search?uid=${userId}`);
-    onClose();
-  };
-
   // Filter users based on search term
   const filteredUsers = searchTerm
     ? users.filter(user => 
@@ -53,6 +51,19 @@ export default function FollowersList({ userId, type, isOpen, onClose }: Followe
         user.username.toLowerCase().includes(searchTerm.toLowerCase())
       )
     : users;
+
+  // Convert UserProfile to the User format expected by UsersCard
+  const convertToUserFormat = (profile: UserProfile) => {
+    return {
+      id: profile.uid,
+      uid: profile.uid,
+      displayName: profile.displayName,
+      username: profile.username,
+      email: profile.email,
+      photoURL: profile.photoURL,
+      bio: profile.bio
+    };
+  };
 
   if (!isOpen) return null;
 
@@ -88,42 +99,28 @@ export default function FollowersList({ userId, type, isOpen, onClose }: Followe
         </div>
         
         {/* User list */}
-        <div className="overflow-y-auto flex-grow">
+        <div className="overflow-y-auto flex-grow p-3">
           {isLoading ? (
             <div className="flex justify-center items-center h-40">
               <LoaderSpinner/>
             </div>
           ) : filteredUsers.length > 0 ? (
-            <ul>
+            <div>
               {filteredUsers.map(user => (
-                <li 
-                  key={user.uid} 
-                  className="border-b last:border-b-0 hover:bg-gray-300 cursor-pointer"
-                  onClick={() => handleUserClick(user.uid)}
-                >
-                  <div className="flex items-center p-4">
-                    <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200 mr-3 flex items-center justify-center">
-                      {user.photoURL ? (
-                        <img 
-                          src={user.photoURL} 
-                          alt={user.displayName} 
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <User size={24} className="text-gray-400" />
-                      )}
-                    </div>
-                    <div>
-                      <p className="font-medium">{user.displayName}</p>
-                      <p className="text-gray-500 text-sm">@{user.username}</p>
-                    </div>
-                  </div>
-                </li>
+                <UsersCard 
+                  key={user.uid}
+                  user={convertToUserFormat(user)}
+                  compact={true}
+                  className="mb-2"
+                  // Custom prop to control action buttons visibility based on list type
+                  showActionButtons={type === 'followers'}
+                  // Hide remove button in all cases for this component
+                  hideRemoveButton={true}
+                />
               ))}
-            </ul>
+            </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-40 text-gray-500">
-              <User size={40} className="mb-2 text-gray-300" />
               <p>No users found</p>
             </div>
           )}

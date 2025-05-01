@@ -9,10 +9,19 @@ interface UsersCardProps {
   user: User;
   onCardRemove?: () => void;
   className?: string;
-  compact?: boolean; // New prop for compact mode
+  compact?: boolean;
+  showActionButtons?: boolean; // New prop to control visibility of action buttons
+  hideRemoveButton?: boolean;  // New prop to hide the remove button
 }
 
-const UsersCard: React.FC<UsersCardProps> = ({ user, onCardRemove, className, compact }) => {
+const UsersCard: React.FC<UsersCardProps> = ({ 
+  user, 
+  onCardRemove, 
+  className, 
+  compact,
+  showActionButtons = true, // Default to showing buttons
+  hideRemoveButton = false // Default to showing remove button
+}) => {
   const [isRemoving, setIsRemoving] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -107,18 +116,22 @@ const UsersCard: React.FC<UsersCardProps> = ({ user, onCardRemove, className, co
         </div>
       </Link>
       
-      <div className={`${compact ? 'ml-2' : 'ml-3 sm:ml-4'} flex-shrink-0`}>
-        <UsersActionButtons 
-          userId={user.id || user.uid}
-          username={user.username}
-          displayName={user.displayName}
-          isFollowing={isFollowing}
-          onFollowStatusChange={handleFollowStatusChange}
-          onRemove={handleRemove}
-          isLoading={isLoading}
-          compact={compact} // Pass the compact prop to UsersActionButtons
-        />
-      </div>
+      {/* Only show the action buttons if showActionButtons is true */}
+      {showActionButtons && currentUser && currentUser.uid !== user.id && (
+        <div className={`${compact ? 'ml-2' : 'ml-3 sm:ml-4'} flex-shrink-0`}>
+          <UsersActionButtons 
+            userId={user.id || user.uid}
+            username={user.username}
+            displayName={user.displayName}
+            isFollowing={isFollowing}
+            onFollowStatusChange={handleFollowStatusChange}
+            onRemove={handleRemove}
+            isLoading={isLoading}
+            compact={compact}
+            hideRemoveButton={hideRemoveButton}
+          />
+        </div>
+      )}
     </div>
   );
 };

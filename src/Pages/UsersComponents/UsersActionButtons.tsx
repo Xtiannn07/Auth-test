@@ -15,7 +15,8 @@ interface UsersActionButtonsProps {
   isLoading?: boolean;
   onFollowStatusChange?: (isFollowing: boolean) => void;
   onRemove?: () => void;
-  compact?: boolean; // New prop for compact mode
+  compact?: boolean;
+  hideRemoveButton?: boolean; // New prop to hide just the remove button
 }
 
 const UsersActionButtons: React.FC<UsersActionButtonsProps> = ({ 
@@ -26,7 +27,8 @@ const UsersActionButtons: React.FC<UsersActionButtonsProps> = ({
   isLoading: isCheckingStatus = false,
   onFollowStatusChange,
   onRemove,
-  compact = false // Default to standard size
+  compact = false,
+  hideRemoveButton = false // Default to showing the remove button
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSliding, setIsSliding] = useState(false);
@@ -138,13 +140,16 @@ const UsersActionButtons: React.FC<UsersActionButtonsProps> = ({
               : compact ? null : 'Follow'}
         </button>
         
-        <button
-          onClick={handleRemove}
-          className={`${compact ? 'p-1' : 'p-2'} rounded-full hover:bg-gray-200 text-gray-500`}
-          aria-label="Remove from suggestions"
-        >
-          <X size={compact ? 14 : 18} />
-        </button>
+        {/* Only show the remove button if hideRemoveButton is false */}
+        {!hideRemoveButton && (
+          <button
+            onClick={handleRemove}
+            className={`${compact ? 'p-1' : 'p-2'} rounded-full hover:bg-gray-200 text-gray-500`}
+            aria-label="Remove from suggestions"
+          >
+            <X size={compact ? 14 : 18} />
+          </button>
+        )}
       </div>
     </>
   );
