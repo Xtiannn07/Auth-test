@@ -6,7 +6,7 @@ import { RootState } from '../../store/store';
 import { Activity as ActivityType, ActivityService } from '../../Services/ActivityService';
 import { formatDistanceToNow } from 'date-fns';
 import { ActivitySkeleton } from '../../Components/UI/Skeleton';
-import { motion, Variants } from 'framer-motion';
+import { motion, Variants, AnimatePresence } from 'framer-motion';
 
 // Helper type for Firestore Timestamp
 interface FirestoreTimestamp {
@@ -30,6 +30,8 @@ export default function Activity() {
   const [activities, setActivities] = useState<ActivityType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deletingIds, setDeletingIds] = useState<string[]>([]);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const currentUser = useSelector((state: RootState) => state.auth.currentUser);
 
   useEffect(() => {
@@ -51,6 +53,39 @@ export default function Activity() {
 
     loadActivities();
   }, [currentUser]);
+
+  const handleDeleteActivity = async (activityId: string) => {
+    if (!activityId) return;
+    
+    try {
+      // Clear any previous error
+      setDeleteError(null);
+      
+      // Add to deleting IDs to show loading state
+      setDeletingIds(prev => [...prev, activityId]);
+      
+      const success = await ActivityService.deleteActivity(activityId);
+      
+      if (success) {
+        // Filter out the deleted activity
+        setActivities(prev => prev.filter(activity => activity.id !== activityId));
+      } else {
+        throw new Error('Failed to delete activity');
+      }
+    } catch (err) {
+      console.error('Error deleting activity:', err);
+      // Set the error message to display to the user
+      setDeleteError('Unable to delete this activity. Please try again later.');
+      
+      // Auto-dismiss the error after 5 seconds
+      setTimeout(() => {
+        setDeleteError(null);
+      }, 5000);
+    } finally {
+      // Remove from deleting IDs
+      setDeletingIds(prev => prev.filter(id => id !== activityId));
+    }
+  };
 
   const renderActivityMessage = (activity: ActivityType) => {
     // Safely get sender name with fallback
@@ -172,6 +207,13 @@ export default function Activity() {
         stiffness: 300,
         damping: 24
       }
+    },
+    exit: {
+      opacity: 0,
+      x: -100,
+      transition: {
+        duration: 0.3
+      }
     }
   };
 
@@ -181,7 +223,7 @@ export default function Activity() {
       opacity: 1,
       transition: {
         repeat: Infinity,
-        repeatType: "reverse", // Fixed: Using literal "reverse" instead of string type
+        repeatType: "reverse",
         duration: 0.8
       }
     }
@@ -240,6 +282,30 @@ export default function Activity() {
       >
         Activity
       </motion.h1>
+      
+      {/* Error notification */}
+      <AnimatePresence>
+        {deleteError && (
+          <motion.div 
+            className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4 flex justify-between items-center"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, height: 0, marginBottom: 0, padding: 0, overflow: 'hidden' }}
+            transition={{ duration: 0.3 }}
+          >
+            <p>{deleteError}</p>
+            <button 
+              onClick={() => setDeleteError(null)} 
+              className="text-red-700 hover:text-red-900"
+              aria-label="Dismiss"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {activities.length > 0 ? (
         <motion.div 
           className="space-y-4"
@@ -247,41 +313,70 @@ export default function Activity() {
           initial="hidden"
           animate="show"
         >
-          {activities.map((activity) => (
-            <motion.div 
-              key={activity.id} 
-              className="bg-white rounded-lg shadow p-4 flex items-start space-x-3"
-              variants={itemVariants}
-              whileHover={{ scale: 1.01, boxShadow: "0 4px 6px rgba(0,0,0,0.1)" }}
-            >
-              {/* User Avatar */}
-              <div className="flex-shrink-0">
-                {activity.senderPhotoURL ? (
-                  <img
-                    src={activity.senderPhotoURL}
-                    alt={activity.senderName || 'User'}
-                    className="w-10 h-10 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                    <span className="text-gray-600 font-medium text-lg">
-                      {(activity.senderName || 'A').charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                )}
-              </div>
+          <AnimatePresence>
+            {activities.map((activity) => (
+              <motion.div 
+                key={activity.id} 
+                className="bg-white rounded-lg shadow p-4 flex items-start space-x-3"
+                variants={itemVariants}
+                whileHover={{ scale: 1.01, boxShadow: "0 4px 6px rgba(0,0,0,0.1)" }}
+                exit="exit"
+              >
+                {/* User Avatar */}
+                <div className="flex-shrink-0">
+                  {activity.senderPhotoURL ? (
+                    <img
+                      src={activity.senderPhotoURL}
+                      alt={activity.senderName || 'User'}
+                      className="w-10 h-10 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                      <span className="text-gray-600 font-medium text-lg">
+                        {(activity.senderName || 'A').charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+                </div>
 
-              {/* Activity Content */}
-              <div className="flex-1">
-                <p className="text-sm">
-                  {renderActivityMessage(activity)}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  {formatActivityDate(activity.createdAt)}
-                </p>
-              </div>
-            </motion.div>
-          ))}
+                {/* Activity Content */}
+                <div className="flex-1">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-sm">
+                        {renderActivityMessage(activity)}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {formatActivityDate(activity.createdAt)}
+                      </p>
+                    </div>
+                    
+                    {/* Delete Button */}
+                    <button
+                      onClick={() => handleDeleteActivity(activity.id!)}
+                      disabled={deletingIds.includes(activity.id!)}
+                      className={`text-gray-400 hover:text-red-500 focus:outline-none transition-colors ${
+                        deletingIds.includes(activity.id!) ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
+                      title="Delete activity"
+                      aria-label="Delete activity"
+                    >
+                      {deletingIds.includes(activity.id!) ? (
+                        <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                      ) : (
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </motion.div>
       ) : (
         <motion.div 

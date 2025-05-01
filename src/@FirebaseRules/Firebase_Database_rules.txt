@@ -51,9 +51,10 @@ service cloud.firestore {
                    request.resource.data.senderId == request.auth.uid &&
                    validActivityDocument(request.resource.data);
                    
-      // Users can only delete activities they created
+      // Users can delete activities they created OR received
       allow delete: if request.auth != null && 
-                    resource.data.senderId == request.auth.uid;
+                    (resource.data.senderId == request.auth.uid || 
+                     resource.data.recipientId == request.auth.uid);
     }
 
     // ==================== FOLLOWING COLLECTION ====================
